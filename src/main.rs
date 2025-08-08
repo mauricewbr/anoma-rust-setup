@@ -7,6 +7,9 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use arm::nullifier_key::NullifierKey;
+use arm::resource::Resource;
+use arm::transaction::Transaction;
 use tower::ServiceBuilder;
 use tower_http::services::ServeDir;
 
@@ -56,6 +59,11 @@ async fn execute_function(
 }
 
 async fn demo_server_function() -> Result<String, Box<dyn std::error::Error>> {
+
+    // create a counter transaction
+    let tx: (Transaction, Resource, NullifierKey) = app::init::create_init_counter_tx();
+
+
     // Replace this with your actual server-side logic
     tokio::time::sleep(tokio::time::Duration::from_millis(500)).await; // Simulate work
     
