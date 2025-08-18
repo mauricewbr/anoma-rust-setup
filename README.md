@@ -22,7 +22,7 @@ cargo run
 ```
 - Runs on: `http://127.0.0.1:3000`
 - API endpoint: `POST /execute`
-- Static files: `GET /static/*`
+- CORS enabled for frontend communication
 
 ### Frontend (TypeScript)
 ```bash
@@ -99,8 +99,7 @@ arm-rust-server/
 │   │   └── main.tsx         # Entry point
 │   ├── package.json         # Frontend dependencies
 │   └── vite.config.ts       # Vite configuration with proxy
-├── static/
-│   └── index.html           # Original vanilla JS version
+
 ├── Cargo.toml               # Rust dependencies
 └── README.md                # This file
 ```

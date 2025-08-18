@@ -2,7 +2,7 @@
 /target
 
 # Node.js
-./frontend/node_modules/
+*/node_modules/
 frontend/dist/
 frontend/build/
 npm-debug.log*

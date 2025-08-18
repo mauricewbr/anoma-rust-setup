@@ -5,7 +5,7 @@ use axum::{
     Router,
 };
 use serde::{Deserialize, Serialize};
-use tower_http::{services::ServeDir, cors::CorsLayer};
+use tower_http::cors::CorsLayer;
 
 #[derive(Deserialize)]
 struct ExecuteRequest {
@@ -82,16 +82,15 @@ async fn execute_function(
 async fn main() {
     let app = Router::new()
         .route("/execute", post(execute_function))
-        .nest_service("/static", ServeDir::new("static"))
         .layer(CorsLayer::permissive()); // Allow all origins for development
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
         .await
         .unwrap();
     
-    println!("🚀 Server running at http://127.0.0.1:3000");
-    println!("📁 Frontend available at: http://127.0.0.1:3000/static/index.html");
+    println!("🚀 Rust backend running at http://127.0.0.1:3000");
     println!("🔗 API endpoint: POST /execute");
+    println!("⚛️  TypeScript frontend: http://localhost:5173 (run separately)");
     
     axum::serve(listener, app).await.unwrap();
 }
