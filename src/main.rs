@@ -1,17 +1,11 @@
 use axum::{
     extract::Json,
     http::StatusCode,
-    response::{Html, IntoResponse},
-    routing::{get, post},
+    routing::post,
     Router,
 };
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use arm::nullifier_key::NullifierKey;
-use arm::resource::Resource;
-use arm::transaction::Transaction;
-use tower::ServiceBuilder;
-use tower_http::services::ServeDir;
+use tower_http::{services::ServeDir, cors::CorsLayer};
 
 #[derive(Deserialize)]
 struct ExecuteRequest {
@@ -30,74 +24,74 @@ struct ErrorResponse {
     error: String,
 }
 
-async fn serve_index() -> Html<String> {
-    let html = tokio::fs::read_to_string("static/index.html")
-        .await
-        .unwrap_or_else(|_| {
-            r#"
-            <!DOCTYPE html>
-            <html><head><title>Error</title></head>
-            <body><h1>Could not load index.html</h1><p>Make sure static/index.html exists</p></body>
-            </html>
-            "#.to_string()
-        });
-    Html(html)
-}
+
 
 async fn execute_function(
     Json(payload): Json<ExecuteRequest>,
 ) -> Result<Json<ExecuteResponse>, (StatusCode, Json<ErrorResponse>)> {
-    // This is where you put your server-side function logic
-    // Pass the three values to the demo function
-    match demo_server_function(payload.value1, payload.value2, payload.value3).await {
-        Ok(result) => Ok(Json(ExecuteResponse { result })),
-        Err(e) => Err((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ErrorResponse {
-                error: format!("Function execution failed: {}", e),
-            }),
-        )),
-    }
-}
+    // Mock counter logic for testing
+    let current_value = payload.value2.parse::<u64>().unwrap_or(0);
+    let counter_value = match payload.value1.as_str() {
+        "initialize" => 0,
+        "increment" => current_value + 1,
+        "decrement" => if current_value > 0 { current_value - 1 } else { 0 },
+        _ => 42
+    };
 
-async fn demo_server_function(value1: String, value2: String, value3: String) -> Result<String, Box<dyn std::error::Error>> {
-    // create a counter transaction
-    // figure out a message to sign in metamask
-    // send message to user to sign
-    // get signature back
-    // create tranasction with signature
-    // send transaction to PA
-    let tx: (Transaction, Resource, NullifierKey) = app::init::create_init_counter_tx();
-
-    // Create a response object that includes both the input values and the transaction
-    let response = serde_json::json!({
+    // Simple mock response for testing that includes expected transaction structure
+    let mock_response = serde_json::json!({
         "inputs": {
-            "value1": value1,
-            "value2": value2,
-            "value3": value3
+            "action": payload.value1,
+            "final_value": counter_value,
+            "user_account": payload.value3
         },
-        "transaction": tx
+        "transaction": [
+            {
+                "mock_transaction_id": "tx_123456",
+                "action": payload.value1,
+                "value": counter_value
+            }
+        ],
+        "message_to_sign": format!("Anoma Counter {} Transaction\n\nAction: {}\nValue: {}\nUser: {}\n\nSign this message to authorize the transaction.", 
+            payload.value1.chars().next().unwrap().to_uppercase().collect::<String>() + &payload.value1[1..],
+            payload.value1,
+            counter_value,
+            payload.value3
+        ),
+        "status": "ready_for_signing",
+        "next_step": "sign_with_metamask",
+        "protocol_adapter": {
+            "verification": "verified",
+            "submission": {
+                "status": "submitted",
+                "tx_hash": "0x1234567890abcdef",
+                "pa_contract": "0xC5033726a1fb969743A6f5Baf1753D56c6e1692b",
+                "chain_id": 421614
+            }
+        },
+        "timestamp": "2024-01-01T00:00:00Z",
+        "message": "🎯 Simplified test version with MetaMask integration!"
     });
 
-    // Convert the response object to JSON
-    let response_json = serde_json::to_string_pretty(&response)?;
-    
-    Ok(response_json)
+    Ok(Json(ExecuteResponse {
+        result: serde_json::to_string(&mock_response).unwrap(),
+    }))
 }
 
 #[tokio::main]
 async fn main() {
     let app = Router::new()
-        .route("/", get(serve_index))
         .route("/execute", post(execute_function))
-        .nest_service("/static", ServeDir::new("static"));
+        .nest_service("/static", ServeDir::new("static"))
+        .layer(CorsLayer::permissive()); // Allow all origins for development
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
         .await
         .unwrap();
     
     println!("🚀 Server running at http://127.0.0.1:3000");
-    println!("📁 Serving static files from ./static/");
+    println!("📁 Frontend available at: http://127.0.0.1:3000/static/index.html");
+    println!("🔗 API endpoint: POST /execute");
     
     axum::serve(listener, app).await.unwrap();
 }
