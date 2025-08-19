@@ -111,6 +111,41 @@ export const Counter: FC = () => {
     }
   };
 
+  const handleEmitCounterTransaction = async () => {
+    if (!walletState.connected || !walletState.account) {
+      alert('Please connect your wallet first');
+      return;
+    }
+
+    setActionInProgress('emit_counter');
+    setEmitResult(null);
+
+    try {
+      // Step 1: Generate message to sign
+      const timestamp = new Date().toISOString();
+      const messageToSign = ApiService.generateEmitTransactionMessage(walletState.account, timestamp);
+
+      // Step 2: Get signature from MetaMask
+      const signature = await signMessage(messageToSign);
+
+      // Step 3: Send to backend to emit ARM counter transaction
+      const result = await ApiService.emitCounterTransaction(
+        walletState.account,
+        signature,
+        messageToSign,
+        timestamp
+      );
+
+      setEmitResult(result);
+      console.log('✅ ARM counter transaction emitted:', result);
+    } catch (error) {
+      console.error('❌ Failed to emit counter transaction:', error);
+      alert(`Failed to emit counter transaction: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setActionInProgress(null);
+    }
+  };
+
   const isDisabled = (action: string) => {
     if (!walletState.connected || counterState.isLoading || actionInProgress) {
       return true;
@@ -195,11 +230,20 @@ export const Counter: FC = () => {
           >
             {actionInProgress === 'emit_real' ? 'Emitting Real ARM...' : '🚀 Emit Real ARM Transaction'}
           </button>
+
+          <button
+            onClick={handleEmitCounterTransaction}
+            disabled={!walletState.connected || actionInProgress !== null}
+            className="btn btn-emit btn-counter"
+          >
+            {actionInProgress === 'emit_counter' ? 'Emitting Counter...' : '🔢 Emit ARM Counter Transaction'}
+          </button>
         </div>
         
         <div className="transaction-info">
           <p><strong>📝 Empty Transaction:</strong> Simple test transaction (works with any Protocol Adapter)</p>
           <p><strong>🚀 Real ARM Transaction:</strong> Full ARM transaction with ZK proofs (debugging)</p>
+          <p><strong>🔢 ARM Counter Transaction:</strong> Real ARM counter initialization with actual logic</p>
         </div>
 
         {emitResult && (

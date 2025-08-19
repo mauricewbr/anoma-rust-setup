@@ -137,6 +137,35 @@ By signing this message, I authorize the emission of an empty transaction to the
     }
   }
 
+  /**
+   * Emit an ARM counter initialization transaction with ZK proofs
+   */
+  static async emitCounterTransaction(
+    userAccount: string,
+    signature: string,
+    signedMessage: string,
+    timestamp: string
+  ): Promise<EmitTransactionResponse> {
+    const request: EmitTransactionRequest = {
+      user_account: userAccount,
+      signature,
+      signed_message: signedMessage,
+      timestamp,
+      message: 'ARM counter initialization transaction',
+    };
+
+    try {
+      const response = await apiClient.post<EmitTransactionResponse>('/emit-counter-transaction', request);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const errorMsg = error.response.data?.error || 'Failed to emit counter transaction';
+        throw new Error(errorMsg);
+      }
+      throw new Error('Network error occurred');
+    }
+  }
+
   // Note: Counter helper methods are removed - use executeCounterAction directly with signatures
 }
 

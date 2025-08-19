@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Json, State},
+    extract::Json,
     http::StatusCode,
     routing::{get, post},
     Router,
@@ -23,24 +23,13 @@ use arm_risc0::nullifier_key::NullifierKey;
 use arm_risc0::resource::Resource;
 use arm_risc0::transaction::{self, Transaction as ArmTransaction};
 
-// State management
+// ARM counter application imports
+extern crate app;
+
+// State management (for future ARM counter operations)
 #[derive(Clone)]
 struct AppState {
     counter_store: Arc<Mutex<HashMap<String, (Resource, NullifierKey)>>>,
-}
-
-#[derive(Deserialize)]
-struct ExecuteRequest {
-    action: String,
-    user_account: String,
-    signature: String,
-    signed_message: String,
-    timestamp: String,
-}
-
-#[derive(Serialize)]
-struct ExecuteResponse {
-    result: String,
 }
 
 #[derive(Serialize)]
@@ -80,7 +69,9 @@ struct EmitTransactionResponse {
     message: String,
 }
 
-/* Temporarily commented - type conflicts with app crate
+// Future: ARM counter operations will be implemented here
+// Currently disabled due to type conflicts with app crate
+/*
 async fn execute_function(
     State(state): State<AppState>,
     Json(payload): Json<ExecuteRequest>,
@@ -440,6 +431,11 @@ async fn emit_real_transaction(
         // Generate truly unique ARM transaction with random nullifier keys
         // This follows ARM compliance protocol correctly and prevents double-spend errors
         let raw_tx: ArmTransaction = transaction::generate_unique_transaction();
+
+        // Generate ARM transaction using the same method as the test transaction from conversion.rs
+        // This should produce the same proof format and structure
+        // let raw_tx: ArmTransaction = transaction::generate_test_transaction(1);
+        
         println!("✅ Generated ARM transaction with {} actions", raw_tx.actions.len());
         
         // Debug: Check if delta proof was generated
@@ -464,10 +460,37 @@ async fn emit_real_transaction(
                  evm_tx.actions.len(), 
                  evm_tx.deltaProof.len());
         
-        // Debug: Check EVM transaction structure
+        // 🔍 DETAILED LOGGING: Log the exact EVM transaction structure for comparison
+        println!("🔍 DETAILED REAL ARM TRANSACTION STRUCTURE (generate_test_transaction):");
+        println!("📄 Full EVM Transaction JSON:");
+        match serde_json::to_string_pretty(&evm_tx) {
+            Ok(json) => println!("{}", json),
+            Err(e) => println!("❌ Failed to serialize EVM transaction: {}", e),
+        }
+        
+        // Log each action in detail
         for (i, action) in evm_tx.actions.iter().enumerate() {
-            println!("🔍 EVM Action {}: complianceVerifierInputs={}, logicVerifierInputs={}", 
-                     i, action.complianceVerifierInputs.len(), action.logicVerifierInputs.len());
+            println!("🔍 Action {} Details:", i);
+            println!("   Logic Verifier Inputs: {}", action.logicVerifierInputs.len());
+            for (j, logic_input) in action.logicVerifierInputs.iter().enumerate() {
+                println!("     Logic Input {}: verifyingKey={}, proof_len={}", 
+                         j, 
+                         hex::encode(&logic_input.verifyingKey), 
+                         logic_input.proof.len());
+                println!("       Instance: tag={}, isConsumed={}, actionTreeRoot={}", 
+                         hex::encode(&logic_input.instance.tag),
+                         logic_input.instance.isConsumed,
+                         hex::encode(&logic_input.instance.actionTreeRoot));
+            }
+            
+            println!("   Compliance Verifier Inputs: {}", action.complianceVerifierInputs.len());
+            for (j, compliance_input) in action.complianceVerifierInputs.iter().enumerate() {
+                println!("     Compliance Input {}: proof_len={}", j, compliance_input.proof.len());
+                println!("       Consumed nullifier: {}", hex::encode(&compliance_input.instance.consumed.nullifier));
+                println!("       Created commitment: {}", hex::encode(&compliance_input.instance.created.commitment));
+                println!("       Consumed logicRef: {}", hex::encode(&compliance_input.instance.consumed.logicRef));
+                println!("       Created logicRef: {}", hex::encode(&compliance_input.instance.created.logicRef));
+            }
         }
         
         // Debug: Check if proofs are present
@@ -593,12 +616,135 @@ fn verify_message_content(message: &str, expected_action: &str, expected_account
     Ok(())
 }
 
-// Helper function to extract counter value from ARM resource
-fn get_counter_value(resource: &Resource) -> u128 {
-    // You'll need to implement this based on your ARM Resource structure
-    // This is just a placeholder
-    u128::from_le_bytes(resource.value_ref[0..16].try_into().unwrap_or([0; 16]))
+async fn emit_counter_transaction(
+    Json(payload): Json<EmitTransactionRequest>,
+) -> Result<Json<EmitTransactionResponse>, (StatusCode, Json<ErrorResponse>)> {
+    let user_account = payload.user_account.clone();
+    let signature = payload.signature.clone();
+    let signed_message = payload.signed_message.clone();
+    let timestamp = payload.timestamp.clone();
+
+    println!("🔢 Emitting ARM COUNTER transaction for account: {}", user_account);
+    println!("🔏 Verifying signature: {}...", &signature[0..20]);
+
+    // Step 1: Verify the signature
+    if let Err(e) = verify_signature(&user_account, &signed_message, &signature) {
+        return Err((
+            StatusCode::UNAUTHORIZED,
+            Json(ErrorResponse {
+                error: format!("Signature verification failed: {}", e),
+            }),
+        ));
+    }
+
+    // Step 2: Verify the message content
+    if let Err(e) = verify_message_content(&signed_message, "emit_transaction", &user_account, &timestamp) {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+                error: format!("Message verification failed: {}", e),
+            }),
+        ));
+    }
+
+    println!("✅ Signature and message verified. Creating ARM counter transaction...");
+
+    // Step 3: Generate ARM counter transaction using actual counter logic
+    println!("🔢 Generating ARM counter initialization transaction...");
+    println!("🔧 RISC0_DEV_MODE: {}", std::env::var("RISC0_DEV_MODE").unwrap_or_else(|_| "not set".to_string()));
+    
+    let arm_tx = tokio::task::spawn_blocking(|| {
+        // Use the actual ARM counter application logic!
+        let (tx, resource, nf_key) = app::init::create_init_counter_tx();
+        println!("✅ ARM counter transaction created:");
+        println!("   Counter value: {}", u128::from_le_bytes(resource.value_ref[0..16].try_into().unwrap_or([0; 16])));
+        println!("   Transaction has {} actions", tx.actions.len());
+        
+        // Debug: Check if delta proof was generated
+        match &tx.delta_proof {
+            arm_risc0::transaction::Delta::Witness(_) => {
+                println!("❌ ARM transaction still has Delta::Witness - proof generation failed!");
+            },
+            arm_risc0::transaction::Delta::Proof(proof) => {
+                println!("✅ ARM transaction has Delta::Proof - size: {} bytes", proof.to_bytes().len());
+            }
+        }
+        
+        // Convert ARM transaction to EVM Protocol Adapter format
+        let evm_tx = ProtocolAdapter::Transaction::from(tx);
+        println!("✅ Converted ARM counter transaction to EVM format");
+        println!("   Actions: {}, Delta proof size: {} bytes", evm_tx.actions.len(), evm_tx.deltaProof.len());
+        
+        // 🔍 DETAILED LOGGING: Log the exact EVM transaction structure
+        println!("🔍 DETAILED ARM COUNTER TRANSACTION STRUCTURE:");
+        println!("📄 Full EVM Transaction JSON:");
+        match serde_json::to_string_pretty(&evm_tx) {
+            Ok(json) => println!("{}", json),
+            Err(e) => println!("❌ Failed to serialize EVM transaction: {}", e),
+        }
+        
+        // Log each action in detail
+        for (i, action) in evm_tx.actions.iter().enumerate() {
+            println!("🔍 Action {} Details:", i);
+            println!("   Logic Verifier Inputs: {}", action.logicVerifierInputs.len());
+            for (j, logic_input) in action.logicVerifierInputs.iter().enumerate() {
+                println!("     Logic Input {}: verifyingKey={}, proof_len={}", 
+                         j, 
+                         hex::encode(&logic_input.verifyingKey), 
+                         logic_input.proof.len());
+                println!("       Instance: tag={}, isConsumed={}, actionTreeRoot={}", 
+                         hex::encode(&logic_input.instance.tag),
+                         logic_input.instance.isConsumed,
+                         hex::encode(&logic_input.instance.actionTreeRoot));
+            }
+            
+            println!("   Compliance Verifier Inputs: {}", action.complianceVerifierInputs.len());
+            for (j, compliance_input) in action.complianceVerifierInputs.iter().enumerate() {
+                println!("     Compliance Input {}: proof_len={}", j, compliance_input.proof.len());
+                println!("       Consumed nullifier: {}", hex::encode(&compliance_input.instance.consumed.nullifier));
+                println!("       Created commitment: {}", hex::encode(&compliance_input.instance.created.commitment));
+                println!("       Consumed logicRef: {}", hex::encode(&compliance_input.instance.consumed.logicRef));
+                println!("       Created logicRef: {}", hex::encode(&compliance_input.instance.created.logicRef));
+            }
+        }
+        
+        evm_tx
+    }).await.map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse {
+                error: format!("Failed to generate ARM counter transaction: {}", e),
+            }),
+        )
+    })?;
+
+    // Step 4: Submit to Protocol Adapter
+    let adapter = protocol_adapter();
+    match adapter.execute(arm_tx).send().await {
+        Ok(pending_tx) => {
+            let tx_hash = pending_tx.tx_hash();
+            println!("✅ ARM counter transaction confirmed! Hash: 0x{}", hex::encode(tx_hash));
+            
+            Ok(Json(EmitTransactionResponse {
+                transaction_hash: format!("0x{}", hex::encode(tx_hash)),
+                success: true,
+                message: "ARM counter initialization transaction with ZK proofs successfully executed on Ethereum Sepolia".to_string(),
+            }))
+        }
+        Err(e) => {
+            println!("❌ Failed to submit ARM counter transaction: {}", e);
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse {
+                    error: format!("Failed to submit transaction: {}", e),
+                }),
+            ))
+        }
+    }
 }
+
+// Helper function to extract counter value from ARM resource
+// Utility functions for ARM counter operations (used in commented code above)
 
 #[tokio::main]
 async fn main() {
@@ -619,11 +765,12 @@ async fn main() {
     };
     
     let app = Router::new()
-        // .route("/execute", post(execute_function)) // Temporarily disabled - type conflicts with app crate
         .route("/merkle-proof", post(get_merkle_proof))
         .route("/protocol-status", get(get_protocol_status))
         .route("/emit-empty-transaction", post(emit_empty_transaction))
         .route("/emit-real-transaction", post(emit_real_transaction))
+        .route("/emit-counter-transaction", post(emit_counter_transaction))
+        // Future: .route("/execute", post(execute_function)) for ARM counter operations
         .with_state(app_state)
         .layer(CorsLayer::permissive());
 
@@ -633,11 +780,12 @@ async fn main() {
     
     println!("🚀 ARM Protocol Adapter backend running at http://127.0.0.1:3000");
     println!("🔗 API endpoints:");
-    println!("   POST /execute - ARM counter operations with real ZK proofs");
     println!("   POST /merkle-proof - Get Merkle proof from EVM Protocol Adapter");
     println!("   GET  /protocol-status - Get EVM Protocol Adapter status");
     println!("   POST /emit-empty-transaction - Emit empty transaction (works with any Protocol Adapter)");
     println!("   POST /emit-real-transaction - Emit real ARM transaction with ZK proofs (debugging)");
+    println!("   POST /emit-counter-transaction - Emit ARM counter initialization with ZK proofs");
+    println!("   Future: POST /execute - ARM counter operations with real ZK proofs");
     println!("⚛️  TypeScript frontend: http://localhost:5173 (run separately)");
     println!("🔗 EVM Protocol Adapter integration: Enabled");
     println!("✅ ARM counter operations: Enabled with real ZK proving");
