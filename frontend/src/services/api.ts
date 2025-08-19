@@ -12,17 +12,35 @@ const apiClient = axios.create({
 
 export class ApiService {
   /**
-   * Execute a counter action on the ARM backend
+   * Generate message for user to sign
+   */
+  static generateSigningMessage(action: CounterAction, userAccount: string, timestamp: string): string {
+    return `Anoma Counter Authorization
+
+Action: ${action.toUpperCase()}
+Account: ${userAccount}
+Timestamp: ${timestamp}
+App: Anoma Counter dApp
+
+By signing this message, I authorize the execution of this action on the Anoma network.`;
+  }
+
+  /**
+   * Execute a counter action on the ARM backend (with signature)
    */
   static async executeCounterAction(
     action: CounterAction,
-    currentValue: number = 0,
-    userAccount: string
+    userAccount: string,
+    signature: string,
+    signedMessage: string,
+    timestamp: string
   ): Promise<CounterResult> {
     const request: ExecuteRequest = {
-      value1: action,
-      value2: currentValue.toString(),
-      value3: userAccount,
+      action,
+      user_account: userAccount,
+      signature,
+      signed_message: signedMessage,
+      timestamp,
     };
 
     try {
@@ -40,26 +58,7 @@ export class ApiService {
     }
   }
 
-  /**
-   * Initialize a new counter
-   */
-  static async initializeCounter(userAccount: string): Promise<CounterResult> {
-    return this.executeCounterAction('initialize', 0, userAccount);
-  }
-
-  /**
-   * Increment the counter
-   */
-  static async incrementCounter(currentValue: number, userAccount: string): Promise<CounterResult> {
-    return this.executeCounterAction('increment', currentValue, userAccount);
-  }
-
-  /**
-   * Decrement the counter
-   */
-  static async decrementCounter(currentValue: number, userAccount: string): Promise<CounterResult> {
-    return this.executeCounterAction('decrement', currentValue, userAccount);
-  }
+  // Note: These helper methods are removed - use executeCounterAction directly with signatures
 }
 
 export default ApiService;

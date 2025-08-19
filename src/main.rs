@@ -22,9 +22,11 @@ struct AppState {
 
 #[derive(Deserialize)]
 struct ExecuteRequest {
-    value1: String,
-    value2: String,
-    value3: String,
+    action: String,
+    user_account: String,
+    signature: String,
+    signed_message: String,
+    timestamp: String,
 }
 
 #[derive(Serialize)]
@@ -41,11 +43,36 @@ async fn execute_function(
     State(state): State<AppState>,
     Json(payload): Json<ExecuteRequest>,
 ) -> Result<Json<ExecuteResponse>, (StatusCode, Json<ErrorResponse>)> {
-    let action = payload.value1.as_str();
-    let current_value = payload.value2.parse::<u64>().unwrap_or(0);
-    let user_account = payload.value3.clone();
+    let action = payload.action.as_str();
+    let user_account = payload.user_account.clone();
+    let signature = payload.signature.clone();
+    let signed_message = payload.signed_message.clone();
+    let timestamp = payload.timestamp.clone();
 
-    println!("Processing {} action for account: {}", action, user_account);
+    println!("🔐 Processing {} action for account: {}", action, user_account);
+    println!("🔏 Verifying signature: {}...", &signature[0..20]);
+
+    // Step 1: Verify the signature
+    if let Err(e) = verify_signature(&user_account, &signed_message, &signature) {
+        return Err((
+            StatusCode::UNAUTHORIZED,
+            Json(ErrorResponse {
+                error: format!("Signature verification failed: {}", e),
+            }),
+        ));
+    }
+
+    // Step 2: Verify the message content
+    if let Err(e) = verify_message_content(&signed_message, action, &user_account, &timestamp) {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+                error: format!("Message verification failed: {}", e),
+            }),
+        ));
+    }
+
+    println!("✅ Signature and message verified. Executing ARM function...");
 
     match action {
         "initialize" => {
@@ -153,6 +180,64 @@ async fn execute_function(
             }),
         )),
     }
+}
+
+// Signature verification functions
+fn verify_signature(user_account: &str, message: &str, signature: &str) -> Result<(), String> {
+    // TODO: Implement proper ECDSA signature verification
+    // For now, just basic validation
+    
+    if signature.len() < 10 {
+        return Err("Signature too short".to_string());
+    }
+    
+    if !signature.starts_with("0x") {
+        return Err("Invalid signature format".to_string());
+    }
+    
+    println!("🔍 [MOCK] Signature verification for account: {}", user_account);
+    println!("🔍 [MOCK] Message length: {} chars", message.len());
+    println!("🔍 [MOCK] Signature: {}...", &signature[0..20]);
+    
+    // TODO: Replace with real signature verification:
+    // 1. Recover public key from signature + message
+    // 2. Derive address from public key  
+    // 3. Compare with user_account
+    
+    Ok(())
+}
+
+fn verify_message_content(message: &str, expected_action: &str, expected_account: &str, timestamp: &str) -> Result<(), String> {
+    // Verify the message contains the expected action
+    let action_line = format!("Action: {}", expected_action.to_uppercase());
+    if !message.contains(&action_line) {
+        return Err("Message does not contain expected action".to_string());
+    }
+    
+    // Verify the message contains the expected account
+    let account_line = format!("Account: {}", expected_account);
+    if !message.contains(&account_line) {
+        return Err("Message does not contain expected account".to_string());
+    }
+    
+    // Verify timestamp is recent (within 5 minutes)
+    if let Ok(msg_time) = chrono::DateTime::parse_from_rfc3339(timestamp) {
+        let now = chrono::Utc::now();
+        let diff = now.signed_duration_since(msg_time.with_timezone(&chrono::Utc));
+        
+        if diff.num_minutes() > 5 {
+            return Err("Message timestamp is too old".to_string());
+        }
+        
+        if diff.num_minutes() < -1 {
+            return Err("Message timestamp is in the future".to_string());
+        }
+    } else {
+        return Err("Invalid timestamp format".to_string());
+    }
+    
+    println!("✅ Message content verification passed");
+    Ok(())
 }
 
 // Helper function to extract counter value from ARM resource

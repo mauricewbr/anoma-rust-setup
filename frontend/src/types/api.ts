@@ -1,8 +1,10 @@
 // API Types based on existing Rust backend
 export interface ExecuteRequest {
-  value1: string; // action: initialize, increment, decrement
-  value2: string; // current value
-  value3: string; // user account address
+  action: string; // initialize, increment, decrement
+  user_account: string; // wallet address
+  signature: string; // MetaMask signature
+  signed_message: string; // The message that was signed
+  timestamp: string; // When the signature was created
 }
 
 export interface ExecuteResponse {

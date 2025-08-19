@@ -29,25 +29,31 @@ export const useCounter = () => {
     setCounterState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      // Step 1: Call backend to create ARM transaction
+      // Step 1: Generate message to sign BEFORE backend call
+      const timestamp = new Date().toISOString();
+      const messageToSign = ApiService.generateSigningMessage(action, userAccount, timestamp);
+
+      // Step 2: Get signature from MetaMask FIRST
+      const signature = await signMessage(messageToSign);
+
+      // Step 3: Send signed data to backend for ARM execution
       const result = await ApiService.executeCounterAction(
         action,
-        counterState.value,
-        userAccount
+        userAccount,
+        signature,
+        messageToSign,
+        timestamp
       );
 
-      // Step 2: Sign the message with MetaMask
-      const signature = await signMessage(result.message_to_sign);
-
-      // Step 3: Create signed transaction object
+      // Step 4: Create signed transaction object
       const signedTransaction: SignedTransaction = {
         signature,
-        message: result.message_to_sign,
+        message: messageToSign,
         signer: userAccount,
-        timestamp: new Date().toISOString()
+        timestamp
       };
 
-      // Step 4: Update counter state
+      // Step 5: Update counter state
       setCounterState(prev => ({
         ...prev,
         value: result.inputs.final_value,
@@ -67,7 +73,7 @@ export const useCounter = () => {
       }));
       throw error;
     }
-  }, [counterState.value]);
+  }, []);
 
   const initializeCounter = useCallback(async (
     userAccount: string,
