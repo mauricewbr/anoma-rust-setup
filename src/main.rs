@@ -9,7 +9,7 @@ use tower_http::cors::CorsLayer;
 
 // ARM imports
 // use arm::nullifier_key::NullifierKey;
-// use arm::resource::Resource;
+use arm::resource::Resource;
 // use arm::transaction::Transaction;
 
 #[derive(Deserialize)]
@@ -50,30 +50,30 @@ async fn execute_function(
             println!("nf_key: {:?}", nf_key);
             
             // Extract counter value from resource
-            // let counter_value = get_counter_value(&resource);
+            let counter_value = get_counter_value(&resource);
             
-            // println!("Created ARM transaction with counter value: {}", counter_value);
+            println!("Created ARM transaction with counter value: {}", counter_value);
             
             // Create response with ARM transaction data
-        //     let response = serde_json::json!({
-        //         "inputs": {
-        //             "action": action,
-        //             "final_value": counter_value,
-        //             "user_account": user_account
-        //         },
-        //         "transaction": tx,
-        //         "message_to_sign": format!(
-        //             "Anoma Counter Initialize Transaction\n\nAction: {}\nValue: {}\nUser: {}\n\nSign this message to authorize the ARM transaction.",
-        //             action, counter_value, user_account
-        //         ),
-        //         "status": "ready_for_signing",
-        //         "next_step": "sign_with_metamask"
-        //     });
+            let response = serde_json::json!({
+                "inputs": {
+                    "action": action,
+                    "final_value": counter_value,
+                    "user_account": user_account
+                },
+                "transaction": tx,
+                "message_to_sign": format!(
+                    "Anoma Counter Initialize Transaction\n\nAction: {}\nValue: {}\nUser: {}\n\nSign this message to authorize the ARM transaction.",
+                    action, counter_value, user_account
+                ),
+                "status": "ready_for_signing",
+                "next_step": "sign_with_metamask"
+            });
             
-        //     Ok(Json(ExecuteResponse {
-        //         result: serde_json::to_string(&response).unwrap(),
-        //     }))
-        // },
+            Ok(Json(ExecuteResponse {
+                result: serde_json::to_string(&response).unwrap(),
+            }))
+        },
         // "increment" => {
         //     println!("Creating increment transaction");
             
@@ -102,13 +102,10 @@ async fn execute_function(
         //         "next_step": "sign_with_metamask"
         //     });
             
-            Ok(Json(ExecuteResponse {
-                result: "ok".to_string(),
-            }))
             // Ok(Json(ExecuteResponse {
             //     result: serde_json::to_string(&response).unwrap(),
             // }))
-        },
+        // },
         _ => Err((
             StatusCode::BAD_REQUEST,
             Json(ErrorResponse {
@@ -120,11 +117,11 @@ async fn execute_function(
 }
 
 // Helper function to extract counter value from ARM resource
-// fn get_counter_value(resource: &Resource) -> u128 {
-//     // You'll need to implement this based on your ARM Resource structure
-//     // This is just a placeholder
-//     u128::from_le_bytes(resource.value_ref[0..16].try_into().unwrap_or([0; 16]))
-// }
+fn get_counter_value(resource: &Resource) -> u128 {
+    // You'll need to implement this based on your ARM Resource structure
+    // This is just a placeholder
+    u128::from_le_bytes(resource.value_ref[0..16].try_into().unwrap_or([0; 16]))
+}
 
 #[tokio::main]
 async fn main() {
