@@ -49,4 +49,17 @@ export interface SignedTransaction {
   timestamp: string;
 }
 
+export interface EmitTransactionRequest {
+  user_account: string;
+  signature: string;
+  signed_message: string;
+  timestamp: string;
+}
+
+export interface EmitTransactionResponse {
+  transaction_hash: string;
+  success: boolean;
+  message: string;
+}
+
 export type CounterAction = 'initialize' | 'increment' | 'decrement';

@@ -1,5 +1,12 @@
 import axios from 'axios';
-import type { ExecuteRequest, ExecuteResponse, CounterResult, CounterAction } from '../types/api';
+import type { 
+  ExecuteRequest, 
+  ExecuteResponse, 
+  CounterResult, 
+  CounterAction,
+  EmitTransactionRequest,
+  EmitTransactionResponse
+} from '../types/api';
 
 const API_BASE_URL = '/api';
 
@@ -23,6 +30,20 @@ Timestamp: ${timestamp}
 App: Anoma Counter dApp
 
 By signing this message, I authorize the execution of this action on the Anoma network.`;
+  }
+
+  /**
+   * Generate message for emitting transaction to sign
+   */
+  static generateEmitTransactionMessage(userAccount: string, timestamp: string): string {
+    return `Anoma Protocol Adapter Transaction
+
+Action: EMIT_TRANSACTION
+Account: ${userAccount}
+Timestamp: ${timestamp}
+App: Anoma Counter dApp
+
+By signing this message, I authorize the emission of an empty transaction to the Ethereum Sepolia Protocol Adapter.`;
   }
 
   /**
@@ -58,7 +79,35 @@ By signing this message, I authorize the execution of this action on the Anoma n
     }
   }
 
-  // Note: These helper methods are removed - use executeCounterAction directly with signatures
+  /**
+   * Emit an empty transaction to the Protocol Adapter
+   */
+  static async emitTransaction(
+    userAccount: string,
+    signature: string,
+    signedMessage: string,
+    timestamp: string
+  ): Promise<EmitTransactionResponse> {
+    const request: EmitTransactionRequest = {
+      user_account: userAccount,
+      signature,
+      signed_message: signedMessage,
+      timestamp,
+    };
+
+    try {
+      const response = await apiClient.post<EmitTransactionResponse>('/emit-transaction', request);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const errorMsg = error.response.data?.error || 'Failed to emit transaction';
+        throw new Error(errorMsg);
+      }
+      throw new Error('Network error occurred');
+    }
+  }
+
+  // Note: Counter helper methods are removed - use executeCounterAction directly with signatures
 }
 
 export default ApiService;

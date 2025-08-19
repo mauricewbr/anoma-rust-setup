@@ -1,11 +1,14 @@
 import { useState, type FC } from 'react';
 import { useWallet } from '../hooks/useWallet';
 import { useCounter } from '../hooks/useCounter';
+import { ApiService } from '../services/api';
+import type { EmitTransactionResponse } from '../types/api';
 
 export const Counter: FC = () => {
   const { walletState, signMessage } = useWallet();
   const { counterState, initializeCounter, incrementCounter, decrementCounter, resetError } = useCounter();
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
+  const [emitResult, setEmitResult] = useState<EmitTransactionResponse | null>(null);
 
   const handleAction = async (action: 'initialize' | 'increment' | 'decrement') => {
     if (!walletState.connected || !walletState.account) {
@@ -33,6 +36,41 @@ export const Counter: FC = () => {
       console.log('Action completed:', result);
     } catch (error) {
       console.error('Action failed:', error);
+    } finally {
+      setActionInProgress(null);
+    }
+  };
+
+  const handleEmitTransaction = async () => {
+    if (!walletState.connected || !walletState.account) {
+      alert('Please connect your wallet first');
+      return;
+    }
+
+    setActionInProgress('emit_transaction');
+    setEmitResult(null);
+
+    try {
+      // Step 1: Generate message to sign
+      const timestamp = new Date().toISOString();
+      const messageToSign = ApiService.generateEmitTransactionMessage(walletState.account, timestamp);
+
+      // Step 2: Get signature from MetaMask
+      const signature = await signMessage(messageToSign);
+
+      // Step 3: Send to backend to emit transaction
+      const result = await ApiService.emitTransaction(
+        walletState.account,
+        signature,
+        messageToSign,
+        timestamp
+      );
+
+      setEmitResult(result);
+      console.log('✅ Empty transaction emitted:', result);
+    } catch (error) {
+      console.error('❌ Failed to emit transaction:', error);
+      alert(`Failed to emit transaction: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setActionInProgress(null);
     }
@@ -100,6 +138,38 @@ export const Counter: FC = () => {
             {actionInProgress === 'increment' ? '⏳' : '+'}
           </button>
         </div>
+      </div>
+
+      <div className="protocol-adapter-section">
+        <h3>🌐 Protocol Adapter</h3>
+        <p>Emit an empty transaction to the Ethereum Sepolia Protocol Adapter</p>
+        
+        <button
+          onClick={handleEmitTransaction}
+          disabled={!walletState.connected || actionInProgress === 'emit_transaction'}
+          className="btn btn-emit"
+        >
+          {actionInProgress === 'emit_transaction' ? 'Emitting Transaction...' : '🚀 Emit Empty Transaction'}
+        </button>
+
+        {emitResult && (
+          <div className="emit-result">
+            <h4>✅ Transaction Emitted Successfully!</h4>
+            <div className="transaction-details">
+              <p><strong>Transaction Hash:</strong> 
+                <a 
+                  href={`https://sepolia.etherscan.io/tx/${emitResult.transaction_hash}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="tx-link"
+                >
+                  {emitResult.transaction_hash}
+                </a>
+              </p>
+              <p><strong>Message:</strong> {emitResult.message}</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {counterState.isLoading && (
