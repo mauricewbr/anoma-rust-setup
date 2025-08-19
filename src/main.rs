@@ -116,8 +116,17 @@ async fn execute_function(
         "initialize" => {
             println!("Creating initialization transaction");
             
-            // Call the ARM function
-            let (tx, resource, nf_key) = app::init::create_init_counter_tx();
+            // Run ARM function in blocking context to avoid runtime conflicts
+            let (tx, resource, nf_key) = tokio::task::spawn_blocking(|| {
+                app::init::create_init_counter_tx()
+            }).await.map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse {
+                        error: format!("Failed to create initialization transaction: {}", e),
+                    }),
+                )
+            })?;
 
             println!("tx: {:?}", tx);
             println!("resource: {:?}", resource);
@@ -175,16 +184,28 @@ async fn execute_function(
 
             println!("nullifier key: {:?}", current_nf_key);
             
-            // Call the ARM increment function
-            let (tx, new_resource) = app::increment::create_increment_tx(
-                current_resource,
-                current_nf_key.clone(),
-            );
+            // Clone the nullifier key before moving into the closure
+            let nf_key_for_storage = current_nf_key.clone();
+            
+            // Run ARM function in blocking context to avoid runtime conflicts
+            let (tx, new_resource) = tokio::task::spawn_blocking(move || {
+                app::increment::create_increment_tx(
+                    current_resource,
+                    current_nf_key,
+                )
+            }).await.map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse {
+                        error: format!("Failed to create increment transaction: {}", e),
+                    }),
+                )
+            })?;
             
             // Update the stored state with new resource
             {
                 let mut store = state.counter_store.lock().unwrap();
-                store.insert(user_account.clone(), (new_resource.clone(), current_nf_key));
+                store.insert(user_account.clone(), (new_resource.clone(), nf_key_for_storage));
             }
             
             let counter_value = get_counter_value(&new_resource);
@@ -458,6 +479,17 @@ fn get_counter_value(resource: &Resource) -> u128 {
 
 #[tokio::main]
 async fn main() {
+    // Load environment variables from .env file
+    dotenv::dotenv().ok();
+    
+    // Debug: Print environment variable status
+    println!("🔧 Environment Configuration:");
+    println!("   RISC0_DEV_MODE: {}", std::env::var("RISC0_DEV_MODE").unwrap_or_else(|_| "not set".to_string()));
+    println!("   BONSAI_API_KEY: {}", if std::env::var("BONSAI_API_KEY").is_ok() { "✅ loaded" } else { "❌ missing" });
+    println!("   BONSAI_API_URL: {}", if std::env::var("BONSAI_API_URL").is_ok() { "✅ loaded" } else { "❌ missing" });
+    println!("   PROTOCOL_ADAPTER_ADDRESS_SEPOLIA: {}", if std::env::var("PROTOCOL_ADAPTER_ADDRESS_SEPOLIA").is_ok() { "✅ loaded" } else { "❌ missing" });
+    println!();
+
     // Create the application state
     let app_state = AppState {
         counter_store: Arc::new(Mutex::new(HashMap::new())),

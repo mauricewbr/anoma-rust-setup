@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Development startup script for Anoma Counter dApp
-echo "🚀 Starting Anoma Counter dApp Development Environment"
+# Production startup script for Anoma Counter dApp
+echo "🚀 Starting Anoma Counter dApp with RISC0 Production Proving"
 echo
 
 # Kill any existing processes
@@ -40,7 +40,15 @@ echo "🔗 Backend:  http://127.0.0.1:3000"
 echo "📄 API Doc:  http://127.0.0.1:3000/static/index.html"
 echo
 echo "🦀 Starting Rust backend with full output..."
+echo "🔧 RISC0_DEV_MODE=false (using Bonsai proving service)"
+echo "📄 All credentials and config: loaded from .env file"
+echo "🔒 API keys safely excluded from Git repository"
 echo "─────────────────────────────────────────────────"
 
 # Start backend in foreground to see all output including prints
-RISC0_DEV_MODE=1 cargo run
+# Production environment with real RISC0 proving service (Bonsai)
+# Bonsai credentials loaded from .env file
+export RISC0_DEV_MODE=false
+export RUST_BACKTRACE=1
+
+cargo run
