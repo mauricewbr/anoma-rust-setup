@@ -80,9 +80,9 @@ By signing this message, I authorize the emission of an empty transaction to the
   }
 
   /**
-   * Emit an empty transaction to the Protocol Adapter
+   * Emit an empty transaction to the Protocol Adapter (works with any adapter)
    */
-  static async emitTransaction(
+  static async emitEmptyTransaction(
     userAccount: string,
     signature: string,
     signedMessage: string,
@@ -93,14 +93,44 @@ By signing this message, I authorize the emission of an empty transaction to the
       signature,
       signed_message: signedMessage,
       timestamp,
+      message: 'Empty transaction for testing',
     };
 
     try {
-      const response = await apiClient.post<EmitTransactionResponse>('/emit-transaction', request);
+      const response = await apiClient.post<EmitTransactionResponse>('/emit-empty-transaction', request);
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
-        const errorMsg = error.response.data?.error || 'Failed to emit transaction';
+        const errorMsg = error.response.data?.error || 'Failed to emit empty transaction';
+        throw new Error(errorMsg);
+      }
+      throw new Error('Network error occurred');
+    }
+  }
+
+  /**
+   * Emit a real ARM transaction with ZK proofs (debugging)
+   */
+  static async emitRealTransaction(
+    userAccount: string,
+    signature: string,
+    signedMessage: string,
+    timestamp: string
+  ): Promise<EmitTransactionResponse> {
+    const request: EmitTransactionRequest = {
+      user_account: userAccount,
+      signature,
+      signed_message: signedMessage,
+      timestamp,
+      message: 'Real ARM transaction with ZK proofs',
+    };
+
+    try {
+      const response = await apiClient.post<EmitTransactionResponse>('/emit-real-transaction', request);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const errorMsg = error.response.data?.error || 'Failed to emit real transaction';
         throw new Error(errorMsg);
       }
       throw new Error('Network error occurred');

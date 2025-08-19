@@ -41,13 +41,13 @@ export const Counter: FC = () => {
     }
   };
 
-  const handleEmitTransaction = async () => {
+  const handleEmitEmptyTransaction = async () => {
     if (!walletState.connected || !walletState.account) {
       alert('Please connect your wallet first');
       return;
     }
 
-    setActionInProgress('emit_transaction');
+    setActionInProgress('emit_empty');
     setEmitResult(null);
 
     try {
@@ -58,8 +58,8 @@ export const Counter: FC = () => {
       // Step 2: Get signature from MetaMask
       const signature = await signMessage(messageToSign);
 
-      // Step 3: Send to backend to emit transaction
-      const result = await ApiService.emitTransaction(
+      // Step 3: Send to backend to emit empty transaction
+      const result = await ApiService.emitEmptyTransaction(
         walletState.account,
         signature,
         messageToSign,
@@ -69,8 +69,43 @@ export const Counter: FC = () => {
       setEmitResult(result);
       console.log('✅ Empty transaction emitted:', result);
     } catch (error) {
-      console.error('❌ Failed to emit transaction:', error);
-      alert(`Failed to emit transaction: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('❌ Failed to emit empty transaction:', error);
+      alert(`Failed to emit empty transaction: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setActionInProgress(null);
+    }
+  };
+
+  const handleEmitRealTransaction = async () => {
+    if (!walletState.connected || !walletState.account) {
+      alert('Please connect your wallet first');
+      return;
+    }
+
+    setActionInProgress('emit_real');
+    setEmitResult(null);
+
+    try {
+      // Step 1: Generate message to sign
+      const timestamp = new Date().toISOString();
+      const messageToSign = ApiService.generateEmitTransactionMessage(walletState.account, timestamp);
+
+      // Step 2: Get signature from MetaMask
+      const signature = await signMessage(messageToSign);
+
+      // Step 3: Send to backend to emit real ARM transaction
+      const result = await ApiService.emitRealTransaction(
+        walletState.account,
+        signature,
+        messageToSign,
+        timestamp
+      );
+
+      setEmitResult(result);
+      console.log('✅ Real ARM transaction emitted:', result);
+    } catch (error) {
+      console.error('❌ Failed to emit real transaction:', error);
+      alert(`Failed to emit real transaction: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setActionInProgress(null);
     }
@@ -142,15 +177,30 @@ export const Counter: FC = () => {
 
       <div className="protocol-adapter-section">
         <h3>🌐 Protocol Adapter</h3>
-        <p>Emit an empty transaction to the Ethereum Sepolia Protocol Adapter</p>
+        <p>Test different transaction types with the Ethereum Sepolia Protocol Adapter</p>
         
-        <button
-          onClick={handleEmitTransaction}
-          disabled={!walletState.connected || actionInProgress === 'emit_transaction'}
-          className="btn btn-emit"
-        >
-          {actionInProgress === 'emit_transaction' ? 'Emitting Transaction...' : '🚀 Emit Empty Transaction'}
-        </button>
+        <div className="transaction-buttons">
+          <button
+            onClick={handleEmitEmptyTransaction}
+            disabled={!walletState.connected || actionInProgress !== null}
+            className="btn btn-emit btn-empty"
+          >
+            {actionInProgress === 'emit_empty' ? 'Emitting Empty...' : '📝 Emit Empty Transaction'}
+          </button>
+          
+          <button
+            onClick={handleEmitRealTransaction}
+            disabled={!walletState.connected || actionInProgress !== null}
+            className="btn btn-emit btn-real"
+          >
+            {actionInProgress === 'emit_real' ? 'Emitting Real ARM...' : '🚀 Emit Real ARM Transaction'}
+          </button>
+        </div>
+        
+        <div className="transaction-info">
+          <p><strong>📝 Empty Transaction:</strong> Simple test transaction (works with any Protocol Adapter)</p>
+          <p><strong>🚀 Real ARM Transaction:</strong> Full ARM transaction with ZK proofs (debugging)</p>
+        </div>
 
         {emitResult && (
           <div className="emit-result">

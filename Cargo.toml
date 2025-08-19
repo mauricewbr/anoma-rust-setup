@@ -12,8 +12,9 @@ serde_json = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 dotenv = "0.15"
 alloy = { version = "1.0.23", features = ["full"] }
+rand = "0.8"
 #arm = { path = "../arm" }
 
-arm = { path = "/Users/maurice/Heliax/arm-risc0/arm", features = ["logic_circuit", "nif"], default-features = false }
-app = { path = "/Users/maurice/Heliax/arm-risc0/examples/simple_counter/app"}
+arm_risc0 = { path = "/Users/maurice/Heliax/arm-risc0-compatible/arm", package = "arm", features = ["groth16_prover"] }
+app = { path = "/Users/maurice/Heliax/arm-risc0-compatible/examples/simple_counter_application/app", package = "counter-app" }
 evm_protocol_adapter_bindings = { path = "/Users/maurice/Heliax/evm-protocol-adapter/bindings" }

@@ -428,3 +428,47 @@ body {
 .tx-link:hover {
   color: #f0f0f0;
 }
+
+/* Transaction Button Styles */
+.transaction-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin: 20px 0;
+  flex-wrap: wrap;
+}
+
+.transaction-info {
+  margin-top: 20px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  font-size: 0.9em;
+}
+
+.transaction-info p {
+  margin: 8px 0;
+  text-align: left;
+}
+
+.btn-empty {
+  background: linear-gradient(45deg, #28a745, #20c997) !important;
+  border: 2px solid rgba(40, 167, 69, 0.3);
+}
+
+.btn-empty:hover:not(:disabled) {
+  background: linear-gradient(45deg, #218838, #1ea085) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(40, 167, 69, 0.4);
+}
+
+.btn-real {
+  background: linear-gradient(45deg, #fd7e14, #e63946) !important;
+  border: 2px solid rgba(253, 126, 20, 0.3);
+}
+
+.btn-real:hover:not(:disabled) {
+  background: linear-gradient(45deg, #e8590c, #d52a3a) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(253, 126, 20, 0.4);
+}
