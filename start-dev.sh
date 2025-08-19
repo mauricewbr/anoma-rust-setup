@@ -10,27 +10,6 @@ pkill -f "cargo run" 2>/dev/null || true
 pkill -f "vite" 2>/dev/null || true
 sleep 1
 
-# Start backend
-echo "🦀 Starting Rust backend (port 3000)..."
-cargo run &
-BACKEND_PID=$!
-sleep 2
-
-# Start frontend
-echo "⚛️  Starting TypeScript frontend (port 5173)..."
-cd frontend
-npm run dev &
-FRONTEND_PID=$!
-cd ..
-
-echo
-echo "✅ Development servers started!"
-echo "📱 Frontend: http://localhost:5173"
-echo "🔗 Backend:  http://127.0.0.1:3000"
-echo "📄 API Doc:  http://127.0.0.1:3000/static/index.html"
-echo
-echo "Press Ctrl+C to stop all servers"
-
 # Function to handle cleanup
 cleanup() {
     echo
@@ -46,5 +25,22 @@ cleanup() {
 # Set up signal handlers
 trap cleanup SIGINT SIGTERM
 
-# Wait for processes
-wait
+# Start frontend in background first (less verbose)
+echo "⚛️  Starting TypeScript frontend (port 5173)..."
+cd frontend
+npm run dev > /tmp/frontend.log 2>&1 &
+FRONTEND_PID=$!
+cd ..
+sleep 2
+
+echo
+echo "✅ Frontend started in background (logs in /tmp/frontend.log)"
+echo "📱 Frontend: http://localhost:5173"
+echo "🔗 Backend:  http://127.0.0.1:3000"
+echo "📄 API Doc:  http://127.0.0.1:3000/static/index.html"
+echo
+echo "🦀 Starting Rust backend with full output..."
+echo "─────────────────────────────────────────────────"
+
+# Start backend in foreground to see all output including prints
+RISC0_DEV_MODE=1 cargo run

@@ -7,6 +7,11 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use tower_http::cors::CorsLayer;
 
+// ARM imports
+// use arm::nullifier_key::NullifierKey;
+// use arm::resource::Resource;
+// use arm::transaction::Transaction;
+
 #[derive(Deserialize)]
 struct ExecuteRequest {
     value1: String,
@@ -24,71 +29,114 @@ struct ErrorResponse {
     error: String,
 }
 
-
-
 async fn execute_function(
     Json(payload): Json<ExecuteRequest>,
 ) -> Result<Json<ExecuteResponse>, (StatusCode, Json<ErrorResponse>)> {
-    // Mock counter logic for testing
+    let action = payload.value1.as_str();
     let current_value = payload.value2.parse::<u64>().unwrap_or(0);
-    let counter_value = match payload.value1.as_str() {
-        "initialize" => 0,
-        "increment" => current_value + 1,
-        "decrement" => if current_value > 0 { current_value - 1 } else { 0 },
-        _ => 42
-    };
+    let user_account = payload.value3.clone();
 
-    // Simple mock response for testing that includes expected transaction structure
-    let mock_response = serde_json::json!({
-        "inputs": {
-            "action": payload.value1,
-            "final_value": counter_value,
-            "user_account": payload.value3
-        },
-        "transaction": [
-            {
-                "mock_transaction_id": "tx_123456",
-                "action": payload.value1,
-                "value": counter_value
-            }
-        ],
-        "message_to_sign": format!("Anoma Counter {} Transaction\n\nAction: {}\nValue: {}\nUser: {}\n\nSign this message to authorize the transaction.", 
-            payload.value1.chars().next().unwrap().to_uppercase().collect::<String>() + &payload.value1[1..],
-            payload.value1,
-            counter_value,
-            payload.value3
-        ),
-        "status": "ready_for_signing",
-        "next_step": "sign_with_metamask",
-        "protocol_adapter": {
-            "verification": "verified",
-            "submission": {
-                "status": "submitted",
-                "tx_hash": "0x1234567890abcdef",
-                "pa_contract": "0xC5033726a1fb969743A6f5Baf1753D56c6e1692b",
-                "chain_id": 421614
-            }
-        },
-        "timestamp": "2024-01-01T00:00:00Z",
-        "message": "🎯 Simplified test version with MetaMask integration!"
-    });
+    println!("Processing {} action for account: {}", action, user_account);
 
-    Ok(Json(ExecuteResponse {
-        result: serde_json::to_string(&mock_response).unwrap(),
-    }))
+    match action {
+        "initialize" => {
+            println!("Creating initialization transaction");
+            
+            // Call the ARM function
+            let (tx, resource, nf_key) = app::init::create_init_counter_tx();
+
+            println!("tx: {:?}", tx);
+            println!("resource: {:?}", resource);
+            println!("nf_key: {:?}", nf_key);
+            
+            // Extract counter value from resource
+            // let counter_value = get_counter_value(&resource);
+            
+            // println!("Created ARM transaction with counter value: {}", counter_value);
+            
+            // Create response with ARM transaction data
+        //     let response = serde_json::json!({
+        //         "inputs": {
+        //             "action": action,
+        //             "final_value": counter_value,
+        //             "user_account": user_account
+        //         },
+        //         "transaction": tx,
+        //         "message_to_sign": format!(
+        //             "Anoma Counter Initialize Transaction\n\nAction: {}\nValue: {}\nUser: {}\n\nSign this message to authorize the ARM transaction.",
+        //             action, counter_value, user_account
+        //         ),
+        //         "status": "ready_for_signing",
+        //         "next_step": "sign_with_metamask"
+        //     });
+            
+        //     Ok(Json(ExecuteResponse {
+        //         result: serde_json::to_string(&response).unwrap(),
+        //     }))
+        // },
+        // "increment" => {
+        //     println!("Creating increment transaction");
+            
+        //     // Call the ARM increment function
+        //     let (tx, new_resource) = app::increment::create_increment_tx(
+        //         // You'll need to pass the current resource and nullifier key here
+        //         // For now, this is a placeholder - you'll need to manage state
+        //     );
+            
+        //     // let counter_value = get_counter_value(&new_resource);
+            
+        //     println!("Created ARM increment transaction with counter value: {}", counter_value);
+            
+        //     let response = serde_json::json!({
+        //         "inputs": {
+        //             "action": action,
+        //             "final_value": counter_value,
+        //             "user_account": user_account
+        //         },
+        //         "transaction": tx,
+        //         "message_to_sign": format!(
+        //             "Anoma Counter Increment Transaction\n\nAction: {}\nValue: {}\nUser: {}\n\nSign this message to authorize the ARM transaction.",
+        //             action, counter_value, user_account
+        //         ),
+        //         "status": "ready_for_signing",
+        //         "next_step": "sign_with_metamask"
+        //     });
+            
+            Ok(Json(ExecuteResponse {
+                result: "ok".to_string(),
+            }))
+            // Ok(Json(ExecuteResponse {
+            //     result: serde_json::to_string(&response).unwrap(),
+            // }))
+        },
+        _ => Err((
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+                error: format!("Unknown action"),
+                // error: format!("Unknown action: {}", action),
+            }),
+        )),
+    }
 }
+
+// Helper function to extract counter value from ARM resource
+// fn get_counter_value(resource: &Resource) -> u128 {
+//     // You'll need to implement this based on your ARM Resource structure
+//     // This is just a placeholder
+//     u128::from_le_bytes(resource.value_ref[0..16].try_into().unwrap_or([0; 16]))
+// }
 
 #[tokio::main]
 async fn main() {
     let app = Router::new()
         .route("/execute", post(execute_function))
-        .layer(CorsLayer::permissive()); // Allow all origins for development
+        .layer(CorsLayer::permissive());
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
         .await
         .unwrap();
     
-    println!("🚀 Rust backend running at http://127.0.0.1:3000");
+    println!("🚀 Rust ARM backend running at http://127.0.0.1:3000");
     println!("🔗 API endpoint: POST /execute");
     println!("⚛️  TypeScript frontend: http://localhost:5173 (run separately)");
     
