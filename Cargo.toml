@@ -15,6 +15,8 @@ alloy = { version = "1.0.23", features = ["full"] }
 rand = "0.8"
 #arm = { path = "../arm" }
 
-arm_risc0 = { path = "/Users/maurice/Heliax/arm-risc0-compatible/arm", package = "arm", features = ["groth16_prover"] }
-app = { path = "/Users/maurice/Heliax/arm-risc0-compatible/examples/simple_counter_application/app", package = "counter-app" }
+# arm_risc0 = { path = "/Users/maurice/Heliax/arm-risc0-compatible/arm", package = "arm", features = ["groth16_prover"] }
+arm_risc0 = { path = "/Users/maurice/Heliax/arm-risc0/arm", package = "arm", features = ["groth16_prover"] }
+# app = { path = "/Users/maurice/Heliax/arm-risc0-compatible/examples/simple_counter_application/app", package = "counter-app" }
+app = { path = "/Users/maurice/Heliax/arm-risc0/examples/simple_counter_application/app", package = "counter-app" }
 evm_protocol_adapter_bindings = { path = "/Users/maurice/Heliax/evm-protocol-adapter/bindings" }

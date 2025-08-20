@@ -52,7 +52,7 @@ export const WalletConnect: FC = () => {
 
       {walletState.error && (
         <div className="error-message">
-          ❌ {walletState.error}
+          Error: {walletState.error}
         </div>
       )}
     </div>

@@ -8,7 +8,7 @@ function App() {
     <div className="app">
       <div className="container">
         <header className="app-header">
-          <h1>🚀 Anoma Counter dApp</h1>
+          <h1>ARM Protocol Adapter Integration</h1>
           <p>TypeScript Frontend + ARM/RISC0 Rust Backend</p>
         </header>
 

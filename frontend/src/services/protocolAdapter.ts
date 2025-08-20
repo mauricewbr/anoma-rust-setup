@@ -10,9 +10,9 @@ export class ProtocolAdapterService {
    */
   static async executeTransaction(signer: ethers.Signer): Promise<string> {
     try {
-      console.log('🔧 Executing ARM transaction with ethers.js...');
+      console.log('Executing ARM transaction with ethers.js...');
       
-      console.log('📤 Submitting transaction to Protocol Adapter...');
+      console.log('Submitting transaction to Protocol Adapter...');
       
       const hardcodedTransactionData = {
         actions: [
@@ -109,7 +109,7 @@ export class ProtocolAdapterService {
 
       
     } catch (error: any) {
-      console.error('❌ Protocol Adapter execution failed:', error);
+      console.error('Protocol Adapter execution failed:', error);
       
       // Extract meaningful error message
       let errorMessage = 'Transaction failed';

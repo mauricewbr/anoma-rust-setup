@@ -68,9 +68,9 @@ export const Counter: FC = () => {
       );
 
       setEmitResult(result);
-      console.log('✅ Empty transaction emitted:', result);
+      console.log('Empty transaction emitted:', result);
     } catch (error) {
-      console.error('❌ Failed to emit empty transaction:', error);
+      console.error('Failed to emit empty transaction:', error);
       alert(`Failed to emit empty transaction: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setActionInProgress(null);
@@ -87,15 +87,15 @@ export const Counter: FC = () => {
     setEmitResult(null);
 
     try {
-      // 🔧 HARDCODED TEST: Skip backend, directly test ethers.js with known working data
-      console.log('🔧 HARDCODED TEST: Bypassing backend, testing ethers.js directly...');
+      // HARDCODED TEST: Skip backend, directly test ethers.js with known working data
+      console.log('HARDCODED TEST: Bypassing backend, testing ethers.js directly...');
       
       // Step 1: Execute hardcoded transaction with ethers.js (same as Etherscan)
-      console.log('🔧 Executing hardcoded transaction with ethers.js...');
+      console.log('Executing hardcoded transaction with ethers.js...');
       const signer = await ProtocolAdapterService.getSigner();
       const txHash = await ProtocolAdapterService.executeTransaction(signer); // Pass null since we're using hardcoded data
 
-      console.log('✅ Hardcoded transaction successful!');
+      console.log('Hardcoded transaction successful!');
       setEmitResult({
         transaction_hash: txHash,
         success: true,
@@ -103,7 +103,7 @@ export const Counter: FC = () => {
       });
 
     } catch (error) {
-      console.error('❌ Failed to emit hardcoded transaction:', error);
+      console.error('Failed to emit hardcoded transaction:', error);
       setEmitResult({
         transaction_hash: '',
         success: false,
@@ -132,7 +132,7 @@ export const Counter: FC = () => {
       const signature = await signMessage(messageToSign);
 
       // Step 3: Call backend Alloy implementation
-      console.log('⚡ Testing Alloy backend implementation...');
+      console.log('Testing Alloy backend implementation...');
       const response = await ApiService.emitRealTransaction(
         walletState.account,
         signature,
@@ -140,7 +140,7 @@ export const Counter: FC = () => {
         timestamp
       );
 
-      console.log('✅ Alloy backend response:', response);
+      console.log('Alloy backend response:', response);
       setEmitResult({
         transaction_hash: response.transaction_hash,
         success: response.success,
@@ -148,7 +148,7 @@ export const Counter: FC = () => {
       });
 
     } catch (error) {
-      console.error('❌ Failed to emit real transaction via Alloy:', error);
+      console.error('Failed to emit real transaction via Alloy:', error);
       setEmitResult({
         transaction_hash: '',
         success: false,
@@ -185,9 +185,9 @@ export const Counter: FC = () => {
       );
 
       setEmitResult(result);
-      console.log('✅ ARM counter transaction emitted:', result);
+      console.log('ARM counter transaction emitted:', result);
     } catch (error) {
-      console.error('❌ Failed to emit counter transaction:', error);
+      console.error('Failed to emit counter transaction:', error);
       alert(`Failed to emit counter transaction: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setActionInProgress(null);
@@ -224,9 +224,9 @@ export const Counter: FC = () => {
 
       <div className="counter-status">
         {counterState.isInitialized ? (
-          <span className="status-initialized">✅ Counter Initialized</span>
+          <span className="status-initialized">Counter Initialized</span>
         ) : (
-          <span className="status-uninitialized">⏳ Counter Not Initialized</span>
+          <span className="status-uninitialized">Counter Not Initialized</span>
         )}
       </div>
 
@@ -268,7 +268,7 @@ export const Counter: FC = () => {
             disabled={!walletState.connected || actionInProgress !== null}
             className="btn btn-emit btn-empty"
           >
-            {actionInProgress === 'emit_empty' ? 'Emitting Empty...' : '📝 Emit Empty Transaction'}
+            {actionInProgress === 'emit_empty' ? 'Emitting Empty...' : 'Emit Empty Transaction'}
           </button>
           
                   <button
@@ -276,7 +276,7 @@ export const Counter: FC = () => {
           disabled={!walletState.connected || actionInProgress !== null}
           className="btn btn-emit btn-real"
         >
-          {actionInProgress === 'emit_real' ? 'Emitting Real ARM...' : '🚀 Emit Real ARM (Ethers.js)'}
+          {actionInProgress === 'emit_real' ? 'Emitting Real ARM...' : 'Emit Real ARM (Ethers.js)'}
         </button>
         
         <button
@@ -284,7 +284,7 @@ export const Counter: FC = () => {
           disabled={!walletState.connected || actionInProgress !== null}
           className="btn btn-emit btn-alloy"
         >
-          {actionInProgress === 'emit_real_alloy' ? 'Emitting Real ARM...' : '⚡ Emit Real ARM (Alloy)'}
+          {actionInProgress === 'emit_real_alloy' ? 'Emitting Real ARM...' : 'Emit Real ARM (Alloy)'}
         </button>
 
           <button
@@ -292,20 +292,20 @@ export const Counter: FC = () => {
             disabled={!walletState.connected || actionInProgress !== null}
             className="btn btn-emit btn-counter"
           >
-            {actionInProgress === 'emit_counter' ? 'Emitting Counter...' : '🔢 Emit ARM Counter Transaction'}
+            {actionInProgress === 'emit_counter' ? 'Emitting Counter...' : 'Emit ARM Counter Transaction'}
           </button>
         </div>
         
         <div className="transaction-info">
-          <p><strong>📝 Empty Transaction:</strong> Simple test transaction (works with any Protocol Adapter)</p>
-          <p><strong>🚀 Real ARM (Ethers.js):</strong> ✅ Working hardcoded transaction via ethers.js</p>
-          <p><strong>⚡ Real ARM (Alloy):</strong> Backend Alloy implementation test (comparing vs ethers.js)</p>
-          <p><strong>🔢 ARM Counter Transaction:</strong> Real ARM counter initialization with actual logic</p>
+          <p><strong>Empty Transaction:</strong> Simple test transaction (works with any Protocol Adapter)</p>
+          <p><strong>Real ARM (Ethers.js):</strong> Working ARM transaction via ethers.js</p>
+          <p><strong>Real ARM (Alloy):</strong> Backend Alloy implementation test (comparing vs ethers.js)</p>
+          <p><strong>ARM Counter Transaction:</strong> Real ARM counter initialization with actual logic</p>
         </div>
 
         {emitResult && (
           <div className="emit-result">
-            <h4>✅ Transaction Emitted Successfully!</h4>
+            <h4>Transaction Emitted Successfully!</h4>
             <div className="transaction-details">
               <p><strong>Transaction Hash:</strong> 
                 <a 
@@ -332,14 +332,14 @@ export const Counter: FC = () => {
 
       {counterState.error && (
         <div className="error-message">
-          ❌ {counterState.error}
+          Error: {counterState.error}
           <button onClick={resetError} className="btn-link">Dismiss</button>
         </div>
       )}
 
       {counterState.lastSignedTransaction && (
         <div className="transaction-info">
-          <h4>✅ Last Signed Transaction</h4>
+          <h4>Last Signed Transaction</h4>
           <div className="transaction-details">
             <p><strong>Signature:</strong> {counterState.lastSignedTransaction.signature.slice(0, 20)}...</p>
             <p><strong>Signer:</strong> {counterState.lastSignedTransaction.signer}</p>

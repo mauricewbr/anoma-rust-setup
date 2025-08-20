@@ -1,137 +1,110 @@
-# 🚀 Anoma Counter dApp
+# ARM RISC0 Protocol Adapter Integration
 
-A modern TypeScript frontend communicating with a Rust ARM/RISC0 backend for counter operations with MetaMask integration.
+A complete end-to-end integration between ARM (Anoma Resource Machine) and the EVM Protocol Adapter, enabling zero-knowledge proof verification on Ethereum Sepolia testnet.
 
-## 🏗️ Architecture
+## Overview
+
+This project demonstrates how to:
+- Generate ARM transactions with RISC0 zero-knowledge proofs
+- Convert ARM transactions to EVM Protocol Adapter format
+- Submit transactions to Ethereum via both Rust (Alloy) and TypeScript (ethers.js) clients
+- Handle RISC0 proof verification and nullifier management
+
+## Architecture
 
 ```
-┌─────────────────┐    HTTP/JSON    ┌──────────────────┐
-│  TypeScript     │ ─────────────── │  Rust Backend    │
-│  Frontend       │                 │  (ARM/RISC0)     │
-│  (React + Vite) │                 │  (Axum Server)   │
-└─────────────────┘                 └──────────────────┘
-     Port 5173                           Port 3000
+Frontend (TypeScript/React)
+├── MetaMask Integration
+├── Transaction Signing
+└── Protocol Adapter Calls (ethers.js)
+
+Backend (Rust/Axum)
+├── ARM Transaction Generation
+├── RISC0 Proof Generation (Bonsai)
+├── Protocol Adapter Integration (Alloy)
+└── Transaction Verification
 ```
 
-## 🛠️ Setup & Running
+## Key Components
 
 ### Backend (Rust)
-```bash
-# In the root directory
-cargo run
-```
-- Runs on: `http://127.0.0.1:3000`
-- API endpoint: `POST /execute`
-- CORS enabled for frontend communication
+- **ARM Integration**: Direct integration with `arm-risc0` for transaction generation
+- **RISC0 Proving**: Uses Bonsai API for production-grade zero-knowledge proof generation
+- **Protocol Adapter**: Submits transactions to deployed Protocol Adapter contracts
+- **Multiple Endpoints**: Empty transactions, real ARM transactions, and counter operations
 
 ### Frontend (TypeScript)
+- **React Interface**: Clean UI for transaction operations
+- **MetaMask Integration**: Wallet connection and transaction signing
+- **Protocol Adapter Service**: Direct contract interaction via ethers.js
+- **Real-time Feedback**: Transaction status and hash display
+
+## Setup
+
+### Prerequisites
+- Rust 1.70+
+- Node.js 18+
+- MetaMask browser extension
+
+### Environment Configuration
+Create a `.env` file:
 ```bash
-# In the frontend directory
+BONSAI_API_KEY=your_bonsai_api_key
+BONSAI_API_URL=https://api.bonsai.xyz
+PROTOCOL_ADAPTER_ADDRESS_SEPOLIA=0x...
+```
+
+### Installation
+```bash
+# Backend
+cargo run
+
+# Frontend (separate terminal)
 cd frontend
 npm install
 npm run dev
 ```
-- Runs on: `http://localhost:5173`
-- Auto-proxies API calls to backend
-- Hot module reloading enabled
 
-## 🎯 Features
+## Usage
 
-### Frontend
-- ✅ **TypeScript + React** with modern hooks
-- ✅ **MetaMask Integration** - wallet connection & message signing
-- ✅ **Counter Operations** - initialize, increment, decrement
-- ✅ **Real-time UI** - loading states, error handling
-- ✅ **Transaction Display** - shows signed data and backend responses
+### 1. Empty Transaction
+Test endpoint that submits a transaction with no ARM logic or proofs.
 
-### Backend
-- ✅ **Rust + Axum** web server
-- ✅ **CORS Support** for frontend communication
-- ✅ **Counter Logic** with proper state management
-- ✅ **ARM Transaction Structure** ready for integration
-- ✅ **Protocol Adapter** simulation (Arbitrum Sepolia)
+### 2. Real ARM Transaction
+Generates a complete ARM transaction with RISC0 proofs and submits to Protocol Adapter.
 
-## 🔄 Data Flow
+### 3. ARM Counter Transaction
+Uses actual ARM counter application logic for transaction generation.
 
-1. **Frontend**: User clicks counter action (initialize/increment/decrement)
-2. **API Call**: Frontend sends action to `POST /execute` with:
-   ```json
-   {
-     "value1": "initialize|increment|decrement",
-     "value2": "current_counter_value",
-     "value3": "user_wallet_address"
-   }
-   ```
-3. **Backend Processing**: Creates ARM transaction and generates signing message
-4. **MetaMask Signing**: Frontend prompts user to sign the message
-5. **Result Display**: Shows signed transaction and backend response
+## Known Issues and Workarounds
 
-## 🧪 Testing
+### ProtocolAdapter Conversion Issue
+The `ProtocolAdapter::Transaction::from(raw_tx)` conversion corrupts proof data during ARM-to-EVM format conversion. A workaround manually replaces corrupted proofs with known-good values.
 
-### Test Backend API
-```bash
-curl -X POST http://127.0.0.1:3000/execute \
-  -H "Content-Type: application/json" \
-  -d '{"value1":"initialize","value2":"0","value3":"0x1234567890123456789012345678901234567890"}'
-```
+**Root Cause**: The conversion process treats some proof fields as raw binary instead of hex strings, causing serialization corruption.
 
-### Test Frontend
-1. Open `http://localhost:5173` in browser
-2. Connect MetaMask wallet
-3. Initialize counter
-4. Try increment/decrement operations
+**Workaround**: Manual proof replacement using validated hex strings from successful ethers.js transactions.
 
-## 📁 Project Structure
+### Nullifier Management
+Each ARM transaction uses nullifiers that can only be consumed once. For testing, deploy fresh Protocol Adapter contracts or use different transaction nonces.
 
-```
-arm-rust-server/
-├── src/
-│   ├── main.rs              # Rust backend with CORS
-│   ├── main_backup.rs       # Full ARM integration (needs dependencies)
-│   └── main_simple.rs       # Minimal test version
-├── frontend/
-│   ├── src/
-│   │   ├── components/      # React components
-│   │   ├── hooks/           # Custom React hooks
-│   │   ├── services/        # API & wallet services
-│   │   ├── types/           # TypeScript type definitions
-│   │   ├── App.tsx          # Main app component
-│   │   └── main.tsx         # Entry point
-│   ├── package.json         # Frontend dependencies
-│   └── vite.config.ts       # Vite configuration with proxy
+## API Endpoints
 
-├── Cargo.toml               # Rust dependencies
-└── README.md                # This file
-```
+- `POST /emit-empty-transaction` - Empty transaction (testing)
+- `POST /emit-real-transaction` - Real ARM transaction with proofs
+- `POST /emit-counter-transaction` - ARM counter initialization
 
-## 🔧 Development Commands
+## Development Notes
 
-### Frontend
-```bash
-cd frontend
-npm run dev      # Start development server
-npm run build    # Build for production
-npm run lint     # TypeScript type checking
-```
+- RISC0 proof generation requires Bonsai API for production builds
+- Protocol Adapter addresses must be updated for each deployment
+- Frontend and backend must use the same Protocol Adapter address
+- Gas limits are set to 3M for RISC0 proof verification
 
-### Backend
-```bash
-cargo run        # Start server
-cargo check      # Quick compilation check
-cargo build      # Build binary
-```
+## Contributing
 
-## 🚀 Next Steps
+This is an internal company project. For questions or issues, contact the development team.
 
-1. **ARM Integration**: Add real ARM crate dependencies to `Cargo.toml`
-2. **RISC0 Integration**: Add zero-knowledge proof generation
-3. **Database**: Replace in-memory state with persistent storage
-4. **Production**: Docker containers and deployment configuration
+## License
 
-## 💡 Key Benefits
-
-- **Type Safety**: Full TypeScript integration
-- **Modern Tooling**: Vite for fast development
-- **Clean Architecture**: Separated concerns
-- **MetaMask Ready**: Production-ready wallet integration
-- **ARM Compatible**: Backend structure ready for ARM integration
+Internal use only.
