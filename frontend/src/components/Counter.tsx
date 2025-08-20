@@ -2,6 +2,7 @@ import { useState, type FC } from 'react';
 import { useWallet } from '../hooks/useWallet';
 import { useCounter } from '../hooks/useCounter';
 import { ApiService } from '../services/api';
+import { ProtocolAdapterService } from '../services/protocolAdapter';
 import type { EmitTransactionResponse } from '../types/api';
 
 export const Counter: FC = () => {
@@ -86,6 +87,43 @@ export const Counter: FC = () => {
     setEmitResult(null);
 
     try {
+      // 🔧 HARDCODED TEST: Skip backend, directly test ethers.js with known working data
+      console.log('🔧 HARDCODED TEST: Bypassing backend, testing ethers.js directly...');
+      
+      // Step 1: Execute hardcoded transaction with ethers.js (same as Etherscan)
+      console.log('🔧 Executing hardcoded transaction with ethers.js...');
+      const signer = await ProtocolAdapterService.getSigner();
+      const txHash = await ProtocolAdapterService.executeTransaction(signer); // Pass null since we're using hardcoded data
+
+      console.log('✅ Hardcoded transaction successful!');
+      setEmitResult({
+        transaction_hash: txHash,
+        success: true,
+        message: 'Hardcoded transaction successfully executed on Ethereum Sepolia via ethers.js (same data as Etherscan)'
+      });
+
+    } catch (error) {
+      console.error('❌ Failed to emit hardcoded transaction:', error);
+      setEmitResult({
+        transaction_hash: '',
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error occurred'
+      });
+    } finally {
+      setActionInProgress(null);
+    }
+  };
+
+  const handleEmitRealTransactionAlloy = async () => {
+    if (!walletState.connected || !walletState.account) {
+      alert('Please connect your wallet first');
+      return;
+    }
+
+    setActionInProgress('emit_real_alloy');
+    setEmitResult(null);
+
+    try {
       // Step 1: Generate message to sign
       const timestamp = new Date().toISOString();
       const messageToSign = ApiService.generateEmitTransactionMessage(walletState.account, timestamp);
@@ -93,19 +131,29 @@ export const Counter: FC = () => {
       // Step 2: Get signature from MetaMask
       const signature = await signMessage(messageToSign);
 
-      // Step 3: Send to backend to emit real ARM transaction
-      const result = await ApiService.emitRealTransaction(
+      // Step 3: Call backend Alloy implementation
+      console.log('⚡ Testing Alloy backend implementation...');
+      const response = await ApiService.emitRealTransaction(
         walletState.account,
         signature,
         messageToSign,
         timestamp
       );
 
-      setEmitResult(result);
-      console.log('✅ Real ARM transaction emitted:', result);
+      console.log('✅ Alloy backend response:', response);
+      setEmitResult({
+        transaction_hash: response.transaction_hash,
+        success: response.success,
+        message: `Alloy backend result: ${response.message}`
+      });
+
     } catch (error) {
-      console.error('❌ Failed to emit real transaction:', error);
-      alert(`Failed to emit real transaction: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('❌ Failed to emit real transaction via Alloy:', error);
+      setEmitResult({
+        transaction_hash: '',
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error occurred'
+      });
     } finally {
       setActionInProgress(null);
     }
@@ -223,13 +271,21 @@ export const Counter: FC = () => {
             {actionInProgress === 'emit_empty' ? 'Emitting Empty...' : '📝 Emit Empty Transaction'}
           </button>
           
-          <button
-            onClick={handleEmitRealTransaction}
-            disabled={!walletState.connected || actionInProgress !== null}
-            className="btn btn-emit btn-real"
-          >
-            {actionInProgress === 'emit_real' ? 'Emitting Real ARM...' : '🚀 Emit Real ARM Transaction'}
-          </button>
+                  <button
+          onClick={handleEmitRealTransaction}
+          disabled={!walletState.connected || actionInProgress !== null}
+          className="btn btn-emit btn-real"
+        >
+          {actionInProgress === 'emit_real' ? 'Emitting Real ARM...' : '🚀 Emit Real ARM (Ethers.js)'}
+        </button>
+        
+        <button
+          onClick={handleEmitRealTransactionAlloy}
+          disabled={!walletState.connected || actionInProgress !== null}
+          className="btn btn-emit btn-alloy"
+        >
+          {actionInProgress === 'emit_real_alloy' ? 'Emitting Real ARM...' : '⚡ Emit Real ARM (Alloy)'}
+        </button>
 
           <button
             onClick={handleEmitCounterTransaction}
@@ -242,7 +298,8 @@ export const Counter: FC = () => {
         
         <div className="transaction-info">
           <p><strong>📝 Empty Transaction:</strong> Simple test transaction (works with any Protocol Adapter)</p>
-          <p><strong>🚀 Real ARM Transaction:</strong> Full ARM transaction with ZK proofs (debugging)</p>
+          <p><strong>🚀 Real ARM (Ethers.js):</strong> ✅ Working hardcoded transaction via ethers.js</p>
+          <p><strong>⚡ Real ARM (Alloy):</strong> Backend Alloy implementation test (comparing vs ethers.js)</p>
           <p><strong>🔢 ARM Counter Transaction:</strong> Real ARM counter initialization with actual logic</p>
         </div>
 

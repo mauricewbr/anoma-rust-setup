@@ -60,6 +60,7 @@ export interface EmitTransactionResponse {
   transaction_hash: string;
   success: boolean;
   message: string;
+  transaction_data?: any; // ARM transaction data for ethers.js execution
 }
 
 export type CounterAction = 'initialize' | 'increment' | 'decrement';
