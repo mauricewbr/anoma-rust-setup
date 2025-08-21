@@ -273,14 +273,34 @@ async fn emit_counter_transaction(
         ));
     }
     
-    let arm_tx = tokio::task::spawn_blocking(|| {
+    // Step 3: Get the latest root from Protocol Adapter before initialization
+    let init_latest_root = {
+        let adapter = protocol_adapter();
+        match adapter.latestRoot().call().await {
+            Ok(root) => {
+                println!("Protocol Adapter latest root before initialization: 0x{}", hex::encode(&root));
+                root
+            }
+            Err(e) => {
+                return Err((
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse {
+                        error: format!("Failed to get latest root before initialization: {}", e),
+                    }),
+                ));
+            }
+        }
+    };
+    
+    let arm_tx = tokio::task::spawn_blocking(move || {
         // Use the actual ARM counter application logic!
         let (tx, resource, nf_key) = app::init::create_init_counter_tx();
         
         // Convert ARM transaction to EVM Protocol Adapter format
         let evm_tx = ProtocolAdapter::Transaction::from(tx);
 
-        println!("evm_tx: {:?}", evm_tx);
+        println!("initialize counter evm_tx: {:?}", evm_tx);
+        println!("Protocol Adapter root before init: 0x{}", hex::encode(&init_latest_root));
         
         (evm_tx, resource, nf_key)
     }).await.map_err(|e| {
@@ -405,21 +425,27 @@ async fn emit_increment_transaction(
     let (latest_root, merkle_path) = {
         let adapter = protocol_adapter();
         
-        // Get the latest root from the blockchain
-        let root = adapter.latestRoot().call().await.map_err(|e| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ErrorResponse {
-                    error: format!("Failed to get latest root: {}", e),
-                }),
-            )
-        })?;
+        // First, get the latest root from the Protocol Adapter
+        let latest_root = match adapter.latestRoot().call().await {
+            Ok(root) => {
+                println!("Protocol Adapter latest root: 0x{}", hex::encode(&root));
+                root
+            }
+            Err(e) => {
+                return Err((
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse {
+                        error: format!("Failed to get latest root from Protocol Adapter: {}", e),
+                    }),
+                ));
+            }
+        };
         
-        // Correctly convert the commitment type for the function call
+        // Then get the merkle proof for the stored resource
         let commitment_b256 = alloy::primitives::B256::from_slice(counter_resource.commitment().as_bytes());
-        println!("commitment_b256: {:?}", commitment_b256);
+        println!("Getting merkle proof for commitment: 0x{}", hex::encode(commitment_b256));
 
-        // Get the merkle proof using the correct commitment type
+        // Get the merkle proof - this will give us the proof for whatever root contains this commitment
         let path = get_merkle_path(&adapter, commitment_b256).await.map_err(|e| {
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -429,19 +455,18 @@ async fn emit_increment_transaction(
             )
         })?;
 
-        // println!("Successfully retrieved latest root: 0x{}", hex::encode(root));
-        // println!("Successfully retrieved Merkle path with {} siblings", path.auth_path.len());
+        println!("Successfully retrieved Merkle path from Protocol Adapter");
         
-        (root, path)
+        (latest_root, path)
     };
 
     let arm_tx = tokio::task::spawn_blocking(move || {
-        // Use a custom increment function that uses the latest root
-        println!("Creating increment transaction with latest root from Protocol Adapter...");
-        println!("Latest root: 0x{}", hex::encode(&latest_root));
+        // Use a custom increment function that uses the merkle path from Protocol Adapter
+        println!("Creating increment transaction with merkle path from Protocol Adapter...");
+        println!("Protocol Adapter current root: 0x{}", hex::encode(&latest_root));
         
-        // Create increment transaction with proper merkle path using latest root
-        let (tx, new_resource) = create_increment_tx_with_latest_root(counter_resource, counter_nf_key.clone(), latest_root, merkle_path);
+        // Create increment transaction with proper merkle path 
+        let (tx, new_resource) = create_increment_tx_with_merkle_path(counter_resource, counter_nf_key.clone(), merkle_path);
         
         println!("Increment transaction created successfully");
         println!("New counter value: {}", u128::from_le_bytes(new_resource.value_ref[0..16].try_into().unwrap_or([0; 16])));
@@ -450,6 +475,14 @@ async fn emit_increment_transaction(
         let evm_tx = ProtocolAdapter::Transaction::from(tx);
         println!("increment evm_tx: {:?}", evm_tx);
         println!("Converted ARM transaction to EVM format");
+        
+        // Compare ARM's calculated root with Protocol Adapter's latest root
+        if !evm_tx.actions.is_empty() && !evm_tx.actions[0].complianceVerifierInputs.is_empty() {
+            let arm_calculated_root = &evm_tx.actions[0].complianceVerifierInputs[0].instance.consumed.commitmentTreeRoot;
+            println!("ARM calculated root: 0x{}", hex::encode(arm_calculated_root));
+            println!("Protocol Adapter root: 0x{}", hex::encode(&latest_root));
+            println!("Roots match: {}", arm_calculated_root == latest_root.as_slice());
+        }
         
         // The new_resource from increment already has the correct state, but we need to extract
         // or create a nullifier key for future use. However, we can't modify the resource after
@@ -597,10 +630,9 @@ async fn get_merkle_path(
     Ok(MerklePath::from_path(auth_path_array))
 }
 
-fn create_increment_tx_with_latest_root(
+fn create_increment_tx_with_merkle_path(
     counter_resource: Resource,
     counter_nf_key: NullifierKey,
-    latest_root: alloy::primitives::B256,
     merkle_path: MerklePath<32>,
 ) -> (arm_risc0::transaction::Transaction, Resource) {
     use arm_risc0::{
@@ -609,20 +641,36 @@ fn create_increment_tx_with_latest_root(
         transaction::{Delta, Transaction},
     };
 
-    println!("Creating increment with latest root: 0x{}", alloy::primitives::hex::encode(&latest_root));
+    println!("Creating increment with merkle path from Protocol Adapter");
     
     // Create a default merkle path for now - this is still not ideal but should be better than completely default
     // In a full implementation, we'd need to construct the actual merkle path for the commitment
     // let merkle_path = MerklePath::<32>::default(); 
     
-    // Use the ARM increment logic but with awareness of the latest root
-    let new_counter = app::increment::increment_counter(&counter_resource, &counter_nf_key);
-    let (compliance_unit, rcv) = app::generate_compliance_proof(
-        counter_resource.clone(),
-        counter_nf_key.clone(),
-        merkle_path, // Still using default for now, but we know the latest root
-        new_counter.clone(),
-    );
+            // FIRST: Let's test your hypothesis by creating two increment resources and comparing commitments
+        println!("Testing commitment determinism...");
+        let test_counter_1 = app::increment::increment_counter(&counter_resource, &counter_nf_key);
+        let test_counter_2 = app::increment::increment_counter(&counter_resource, &counter_nf_key);
+        
+        println!("Test counter 1 commitment: 0x{}", hex::encode(test_counter_1.commitment().as_bytes()));
+        println!("Test counter 2 commitment: 0x{}", hex::encode(test_counter_2.commitment().as_bytes()));
+        println!("Commitments are identical: {}", test_counter_1.commitment().as_bytes() == test_counter_2.commitment().as_bytes());
+        
+        // Use the ARM increment logic but with awareness of the latest root
+        let new_counter = test_counter_1; // Use the first test counter
+        
+        println!("Original counter commitment: 0x{}", hex::encode(counter_resource.commitment().as_bytes()));
+        println!("New counter commitment: 0x{}", hex::encode(new_counter.commitment().as_bytes()));
+        println!("Original counter value: {}", u128::from_le_bytes(counter_resource.value_ref[0..16].try_into().unwrap_or([0; 16])));
+        println!("New counter value: {}", u128::from_le_bytes(new_counter.value_ref[0..16].try_into().unwrap_or([0; 16])));
+        
+        let (compliance_unit, rcv) = app::generate_compliance_proof(
+            counter_resource.clone(),
+            counter_nf_key.clone(),
+            merkle_path, // Using real merkle path from Protocol Adapter
+            new_counter.clone(),
+        );
+        
     let logic_verifier_inputs = app::generate_logic_proofs(
         counter_resource,
         counter_nf_key,
