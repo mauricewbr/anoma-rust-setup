@@ -194,6 +194,41 @@ export const Counter: FC = () => {
     }
   };
 
+  const handleEmitIncrementTransaction = async () => {
+    if (!walletState.connected || !walletState.account) {
+      alert('Please connect your wallet first');
+      return;
+    }
+
+    setActionInProgress('emit_increment');
+    setEmitResult(null);
+
+    try {
+      // Step 1: Generate message to sign
+      const timestamp = new Date().toISOString();
+      const messageToSign = ApiService.generateEmitTransactionMessage(walletState.account, timestamp);
+
+      // Step 2: Get signature from MetaMask
+      const signature = await signMessage(messageToSign);
+
+      // Step 3: Send to backend to emit ARM increment transaction
+      const result = await ApiService.emitIncrementTransaction(
+        walletState.account,
+        signature,
+        messageToSign,
+        timestamp
+      );
+
+      setEmitResult(result);
+      console.log('ARM increment transaction emitted:', result);
+    } catch (error) {
+      console.error('Failed to emit increment transaction:', error);
+      alert(`Failed to emit increment transaction: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setActionInProgress(null);
+    }
+  };
+
   const isDisabled = (action: string) => {
     if (!walletState.connected || counterState.isLoading || actionInProgress) {
       return true;
@@ -294,6 +329,14 @@ export const Counter: FC = () => {
           >
             {actionInProgress === 'emit_counter' ? 'Emitting Counter...' : 'Emit ARM Counter Transaction'}
           </button>
+
+          <button
+            onClick={handleEmitIncrementTransaction}
+            disabled={!walletState.connected || actionInProgress !== null}
+            className="btn btn-emit btn-increment"
+          >
+            {actionInProgress === 'emit_increment' ? 'Emitting Increment...' : 'Emit ARM Increment Transaction'}
+          </button>
         </div>
         
         <div className="transaction-info">
@@ -301,6 +344,7 @@ export const Counter: FC = () => {
           <p><strong>Real ARM (Ethers.js):</strong> Working ARM transaction via ethers.js</p>
           <p><strong>Real ARM (Alloy):</strong> Backend Alloy implementation test (comparing vs ethers.js)</p>
           <p><strong>ARM Counter Transaction:</strong> Real ARM counter initialization with actual logic</p>
+          <p><strong>ARM Increment Transaction:</strong> Real ARM counter increment with actual logic</p>
         </div>
 
         {emitResult && (

@@ -13,6 +13,7 @@ chrono = { version = "0.4", features = ["serde"] }
 dotenv = "0.15"
 alloy = { version = "1.0.23", features = ["full"] }
 rand = "0.8"
+risc0-zkvm = { version = "2.3.1", features = ["std", "unstable"], default-features = false }
 #arm = { path = "../arm" }
 
 # arm_risc0 = { path = "/Users/maurice/Heliax/arm-risc0-compatible/arm", package = "arm", features = ["groth16_prover"] }

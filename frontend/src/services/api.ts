@@ -93,7 +93,6 @@ By signing this message, I authorize the emission of an empty transaction to the
       signature,
       signed_message: signedMessage,
       timestamp,
-      message: 'Empty transaction for testing',
     };
 
     try {
@@ -122,7 +121,6 @@ By signing this message, I authorize the emission of an empty transaction to the
       signature,
       signed_message: signedMessage,
       timestamp,
-      message: 'Real ARM transaction with ZK proofs',
     };
 
     try {
@@ -151,7 +149,6 @@ By signing this message, I authorize the emission of an empty transaction to the
       signature,
       signed_message: signedMessage,
       timestamp,
-      message: 'ARM counter initialization transaction',
     };
 
     try {
@@ -160,6 +157,34 @@ By signing this message, I authorize the emission of an empty transaction to the
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         const errorMsg = error.response.data?.error || 'Failed to emit counter transaction';
+        throw new Error(errorMsg);
+      }
+      throw new Error('Network error occurred');
+    }
+  }
+
+  /**
+   * Emit an ARM counter increment transaction with ZK proofs
+   */
+  static async emitIncrementTransaction(
+    userAccount: string,
+    signature: string,
+    signedMessage: string,
+    timestamp: string
+  ): Promise<EmitTransactionResponse> {
+    const request: EmitTransactionRequest = {
+      user_account: userAccount,
+      signature,
+      signed_message: signedMessage,
+      timestamp,
+    };
+
+    try {
+      const response = await apiClient.post<EmitTransactionResponse>('/emit-increment-transaction', request);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const errorMsg = error.response.data?.error || 'Failed to emit increment transaction';
         throw new Error(errorMsg);
       }
       throw new Error('Network error occurred');
