@@ -616,8 +616,12 @@ async fn get_merkle_path(
         .map(|(i, sibling_b256)| {
             // Correct conversion from B256 to Digest using .0 to get the byte array
             let sibling_digest = Digest::from_bytes(sibling_b256.0);
-            let direction = res.directionBits.bit(i as usize);
-            (sibling_digest, direction)
+            // CRITICAL FIX: Invert direction bit!
+            // Protocol Adapter: bit=0 means sibling on LEFT, bit=1 means sibling on RIGHT  
+            // ARM MerklePath: false means leaf on LEFT (sibling on RIGHT), true means leaf on RIGHT (sibling on LEFT)
+            let pa_sibling_is_left = !res.directionBits.bit(i as usize);  // Invert PA direction
+            let arm_leaf_is_on_right = pa_sibling_is_left;  // If sibling is left, leaf is on right
+            (sibling_digest, arm_leaf_is_on_right)
         })
         .collect();
 
