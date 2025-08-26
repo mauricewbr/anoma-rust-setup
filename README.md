@@ -1,129 +1,206 @@
-# ARM RISC0 Protocol Adapter Integration
+`# Anoma Resource Machine Protocol Adapter
 
-A complete end-to-end integration between ARM (Anoma Resource Machine) and the EVM Protocol Adapter, enabling zero-knowledge proof verification on Ethereum Sepolia testnet.
+A full-stack application demonstrating the integration between Anoma's Resource Machine (ARM) and Ethereum, enabling zero-knowledge proof verification and privacy-preserving transactions on Ethereum networks.
 
 ## Overview
 
-This project demonstrates how to:
-- Generate ARM transactions with RISC0 zero-knowledge proofs
-- Convert ARM transactions to EVM Protocol Adapter format
-- Submit transactions to Ethereum via both Rust (Alloy) and TypeScript (ethers.js) clients
-- Handle RISC0 proof verification and nullifier management
+This project showcases a complete implementation of ARM-to-EVM transaction bridging, featuring:
+
+- **Zero-Knowledge Proof Generation**: RISC0-powered proof generation for ARM transactions
+- **Cross-Chain Integration**: Seamless conversion between ARM and EVM transaction formats
+- **Full-Stack Architecture**: Rust backend with TypeScript frontend
+- **Production-Ready Components**: Built with modern tooling (Alloy, ethers.js, React)
 
 ## Architecture
 
 ```
-Frontend (TypeScript/React)
-├── MetaMask Integration
-├── Transaction Signing
-└── Protocol Adapter Calls (ethers.js)
-
-Backend (Rust/Axum)
-├── ARM Transaction Generation
-├── RISC0 Proof Generation (Bonsai)
-├── Protocol Adapter Integration (Alloy)
-└── Transaction Verification
+┌─────────────────────────────────┐
+│     Frontend (React/TypeScript) │
+│  ┌─────────────────────────────┐ │
+│  │   MetaMask Integration      │ │
+│  │   Transaction Signing       │ │
+│  │   Protocol Adapter UI       │ │
+│  └─────────────────────────────┘ │
+└─────────────┬───────────────────┘
+              │
+              │ HTTP/WebSocket
+              │
+┌─────────────▼───────────────────┐
+│      Backend (Rust/Axum)       │
+│  ┌─────────────────────────────┐ │
+│  │   ARM Transaction Engine    │ │
+│  │   RISC0 Proof Generation    │ │
+│  │   Protocol Adapter Bridge   │ │
+│  │   Ethereum Integration      │ │
+│  └─────────────────────────────┘ │
+└─────────────┬───────────────────┘
+              │
+              │ RPC Calls
+              │
+┌─────────────▼───────────────────┐
+│      Ethereum Network          │
+│   Protocol Adapter Contracts   │
+└─────────────────────────────────┘
 ```
 
-## Key Components
+## Features
 
-### Backend (Rust)
-- **ARM Integration**: Direct integration with `arm-risc0` for transaction generation
-- **RISC0 Proving**: Uses Bonsai API for production-grade zero-knowledge proof generation
-- **Protocol Adapter**: Submits transactions to deployed Protocol Adapter contracts
-- **Multiple Endpoints**: Empty transactions, real ARM transactions, and counter operations
+### Core Capabilities
+- **ARM Transaction Generation**: Create privacy-preserving resource transactions
+- **ZK Proof Integration**: RISC0-based zero-knowledge proof generation and verification  
+- **Protocol Adaptation**: Convert ARM transactions to EVM-compatible format
+- **Counter Application**: Reference implementation with state management
 
-### Frontend (TypeScript)
-- **React Interface**: Clean UI for transaction operations
-- **MetaMask Integration**: Wallet connection and transaction signing
-- **Protocol Adapter Service**: Direct contract interaction via ethers.js
-- **Real-time Feedback**: Transaction status and hash display
+### Technical Highlights
+- **Modern Rust Stack**: Built with Axum, Alloy, and async/await patterns
+- **Type Safety**: End-to-end type safety from Rust backend to TypeScript frontend
+- **Production Cryptography**: Integration with Bonsai API for scalable proof generation
+- **Ethereum Integration**: Direct interaction with deployed Protocol Adapter contracts
 
-## Setup
+## Quick Start
 
 ### Prerequisites
-- Rust 1.70+
-- Node.js 18+
-- MetaMask browser extension
-
-### Dependency Setup
-**Important**: Before proceeding with installation, please set up the project dependencies. This project uses local dependencies that require specific setup.
-
-📋 **For detailed dependency setup instructions, see [DEPENDENCY_SETUP.md](./DEPENDENCY_SETUP.md)**
-
-**Quick setup options:**
-
-1. **Automated setup** (recommended for new team members):
-   ```bash
-   ./setup-dependencies.sh
-   ```
-
-2. **GitHub dependencies** (experimental):
-   ```bash
-   ./setup-dependencies.sh --github
-   ```
-
-3. **Manual setup**: Follow the detailed instructions in [DEPENDENCY_SETUP.md](./DEPENDENCY_SETUP.md)
-
-### Environment Configuration
-Create a `.env` file:
-```bash
-BONSAI_API_KEY=your_bonsai_api_key
-BONSAI_API_URL=https://api.bonsai.xyz
-PROTOCOL_ADAPTER_ADDRESS_SEPOLIA=0x...
-```
+- **Rust**: 1.70 or later ([Install Rust](https://rustup.rs/))
+- **Node.js**: 18+ ([Install Node.js](https://nodejs.org/))
+- **MetaMask**: Browser extension for wallet integration
 
 ### Installation
-```bash
-# Backend
-cargo run
 
-# Frontend (separate terminal)
-cd frontend
-npm install
-npm run dev
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd arm-rust-server
+   ```
+
+2. **Configure environment**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration:
+   # BONSAI_API_KEY=your_bonsai_api_key
+   # BONSAI_API_URL=https://api.bonsai.xyz
+   # PROTOCOL_ADAPTER_ADDRESS_SEPOLIA=0x...
+   ```
+
+3. **Start the application**
+
+   **Option A: One-command startup (recommended)**
+   ```bash
+   ./start-dev.sh
+   ```
+   This script handles both backend and frontend startup with proper configuration.
+
+   **Option B: Manual startup**
+   ```bash
+   # Terminal 1: Start backend
+   cargo run
+
+   # Terminal 2: Start frontend
+   cd frontend
+   npm install
+   npm run dev
+   ```
+
+4. **Access the application**
+   - Frontend UI: `http://localhost:5173`
+   - Backend API: `http://localhost:3000`
+
+## API Reference
+
+The backend exposes REST endpoints for ARM transaction operations:
+
+### Transaction Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/emit-empty-transaction` | POST | Submit test transaction without ARM logic |
+| `/emit-real-transaction` | POST | Generate and submit ARM transaction with ZK proofs |
+| `/emit-counter-transaction` | POST | Create counter application transaction |
+
+### Request Format
+
+All endpoints accept JSON payloads with user authentication:
+
+```json
+{
+  "user_account": "0x...",
+  "signature": "0x...",
+  "signed_message": "message",
+  "timestamp": "ISO8601"
+}
 ```
 
-## Usage
+### Response Format
 
-### 1. Empty Transaction
-Test endpoint that submits a transaction with no ARM logic or proofs.
+```json
+{
+  "transaction_hash": "0x...",
+  "success": true,
+  "message": "Transaction submitted successfully",
+  "transaction_data": { ... }
+}
+```
 
-### 2. Real ARM Transaction
-Generates a complete ARM transaction with RISC0 proofs and submits to Protocol Adapter.
+## Development
 
-### 3. ARM Counter Transaction
-Uses actual ARM counter application logic for transaction generation.
+### Project Structure
 
-## Known Issues and Workarounds
+```
+├── src/
+│   └── main.rs              # Backend server and API endpoints
+├── frontend/
+│   ├── src/
+│   │   ├── components/      # React components
+│   │   ├── services/        # API and wallet services
+│   │   └── types/           # TypeScript definitions
+│   └── package.json
+├── Cargo.toml               # Rust dependencies
+└── README.md
+```
 
-### ProtocolAdapter Conversion Issue
-The `ProtocolAdapter::Transaction::from(raw_tx)` conversion corrupts proof data during ARM-to-EVM format conversion. A workaround manually replaces corrupted proofs with known-good values.
+### Key Dependencies
 
-**Root Cause**: The conversion process treats some proof fields as raw binary instead of hex strings, causing serialization corruption.
+- **Backend**: `axum`, `alloy`, `risc0-zkvm`, `arm-risc0`
+- **Frontend**: `react`, `ethers`, `axios`
+- **ZK Proving**: RISC0 with Bonsai API integration
 
-**Workaround**: Manual proof replacement using validated hex strings from successful ethers.js transactions.
+### Configuration
 
-### Nullifier Management
-Each ARM transaction uses nullifiers that can only be consumed once. For testing, deploy fresh Protocol Adapter contracts or use different transaction nonces.
+Environment variables required for operation:
 
-## API Endpoints
+- `BONSAI_API_KEY`: RISC0 Bonsai API key for proof generation
+- `BONSAI_API_URL`: Bonsai service endpoint
+- `PROTOCOL_ADAPTER_ADDRESS_SEPOLIA`: Deployed contract address
 
-- `POST /emit-empty-transaction` - Empty transaction (testing)
-- `POST /emit-real-transaction` - Real ARM transaction with proofs
-- `POST /emit-counter-transaction` - ARM counter initialization
+## Technology Stack
 
-## Development Notes
+### Backend (Rust)
+- **Web Framework**: Axum for async HTTP server
+- **Ethereum Client**: Alloy for type-safe blockchain interactions
+- **Zero-Knowledge**: RISC0 for proof generation and verification
+- **ARM Integration**: Direct integration with Anoma Resource Machine
 
-- RISC0 proof generation requires Bonsai API for production builds
-- Protocol Adapter addresses must be updated for each deployment
-- Frontend and backend must use the same Protocol Adapter address
-- Gas limits are set to 3M for RISC0 proof verification
+### Frontend (TypeScript/React)
+- **UI Framework**: React with modern hooks
+- **Ethereum Integration**: ethers.js for wallet and contract interactions
+- **HTTP Client**: Axios for API communication
+- **Wallet**: MetaMask integration for transaction signing
 
 ## Contributing
 
-This is an internal company project. For questions or issues, contact the development team.
+We welcome contributions! Please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests where appropriate
+5. Submit a pull request
 
 ## License
 
-Internal use only.
+This project is licensed under [LICENSE](./LICENSE). See the LICENSE file for details.
+
+## Links
+
+- [Anoma Protocol](https://anoma.net)
+- [RISC0](https://risczero.com)
+- [ARM Specification](https://github.com/anoma/arm-risc0)
