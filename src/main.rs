@@ -11,6 +11,7 @@ use std::sync::{Arc, Mutex};
 use arm_risc0::resource::Resource;
 use arm_risc0::nullifier_key::NullifierKey;
 use arm_risc0::merkle_path::MerklePath;
+use arm_risc0::utils;
 use risc0_zkvm::sha::Digest;
 
 // EVM Protocol Adapter imports
@@ -630,8 +631,13 @@ async fn get_merkle_path(
     let auth_path_array: [(Digest, bool); 32] = auth_path_vec.try_into()
         .map_err(|_| format!("Failed to convert path to fixed-size array: expected 32 elements, got different length"))?;
 
+    // Convert Digest values to Vec<u32> using utils::bytes_to_words
+    let converted_path: [(Vec<u32>, bool); 32] = auth_path_array.map(|(digest, bool_val)| {
+        (utils::bytes_to_words(digest.as_bytes()), bool_val)
+    });
+
     // Use the public constructor `from_path`
-    Ok(MerklePath::from_path(auth_path_array))
+    Ok(MerklePath::from_path(converted_path))
 }
 
 fn create_increment_tx_with_merkle_path(

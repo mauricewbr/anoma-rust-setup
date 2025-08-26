@@ -46,6 +46,25 @@ Backend (Rust/Axum)
 - Node.js 18+
 - MetaMask browser extension
 
+### Dependency Setup
+**Important**: Before proceeding with installation, please set up the project dependencies. This project uses local dependencies that require specific setup.
+
+📋 **For detailed dependency setup instructions, see [DEPENDENCY_SETUP.md](./DEPENDENCY_SETUP.md)**
+
+**Quick setup options:**
+
+1. **Automated setup** (recommended for new team members):
+   ```bash
+   ./setup-dependencies.sh
+   ```
+
+2. **GitHub dependencies** (experimental):
+   ```bash
+   ./setup-dependencies.sh --github
+   ```
+
+3. **Manual setup**: Follow the detailed instructions in [DEPENDENCY_SETUP.md](./DEPENDENCY_SETUP.md)
+
 ### Environment Configuration
 Create a `.env` file:
 ```bash

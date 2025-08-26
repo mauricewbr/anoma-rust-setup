@@ -11,13 +11,18 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 dotenv = "0.15"
-alloy = { version = "1.0.23", features = ["full"] }
+alloy = { version = "1.0.23", features = ["full", "signer-keystore"] }
+bincode = "1.3.3"
 rand = "0.8"
 risc0-zkvm = { version = "2.3.1", features = ["std", "unstable"], default-features = false }
-#arm = { path = "../arm" }
 
-# arm_risc0 = { path = "/Users/maurice/Heliax/arm-risc0-compatible/arm", package = "arm", features = ["groth16_prover"] }
-arm_risc0 = { path = "/Users/maurice/Heliax/arm-risc0/arm", package = "arm", features = ["groth16_prover"] }
-# app = { path = "/Users/maurice/Heliax/arm-risc0-compatible/examples/simple_counter_application/app", package = "counter-app" }
-app = { path = "/Users/maurice/Heliax/arm-risc0/examples/simple_counter_application/app", package = "counter-app" }
-evm_protocol_adapter_bindings = { path = "/Users/maurice/Heliax/evm-protocol-adapter/bindings" }
+# ARM RISC0 dependencies - Compatible with specific commits
+# Target commits for GitHub migration:
+# arm-risc0: https://github.com/anoma/arm-risc0/commit/48bc03b964799d270874c2ef2c2b16b1d271fbf4  
+# evm-protocol-adapter: https://github.com/anoma/evm-protocol-adapter/commit/f78d370856dec0155a45ac2bb79a7910982281d1
+# 
+# For GitHub-based dependencies, use: cp Cargo.github.toml Cargo.toml
+# For different local paths, update the paths below to match your setup
+evm_protocol_adapter_bindings = { git = "https://github.com/anoma/evm-protocol-adapter", rev = "bf772bfada08d18fcf35b1b115f28ae56ec3d94f"}
+arm_risc0 = { git = "https://github.com/anoma/arm-risc0", package = "arm", tag = "v0.3.0", features = ["groth16_prover"] }
+app = { git = "https://github.com/anoma/arm-risc0", package = "counter-app", tag = "v0.3.0" }
