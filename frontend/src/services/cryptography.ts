@@ -279,6 +279,143 @@ export function hexToBytes(hex: string): Uint8Array {
 }
 
 /**
+ * Generate ephemeral encryption key pair for transaction-level encryption
+ */
+export function generateEphemeralEncryptionKeyPair(): KeyPair {
+  const privateKey = randomBytes(32);
+  const publicKey = secp256k1.getPublicKey(privateKey, true); // compressed
+  return { privateKey, publicKey };
+}
+
+/**
+ * Generate ephemeral discovery key pair for transaction-level discovery
+ */
+export function generateEphemeralDiscoveryKeyPair(): KeyPair {
+  const privateKey = randomBytes(32);
+  const publicKey = secp256k1.getPublicKey(privateKey, true); // compressed
+  return { privateKey, publicKey };
+}
+
+/**
+ * Key Derivation Function using HMAC-SHA256
+ * @param sharedSecret Shared secret from DH operation
+ * @param info Additional info (usually ephemeral public key)
+ * @returns Derived key material (32 bytes)
+ */
+export function kdf(sharedSecret: Uint8Array, info: Uint8Array): Uint8Array {
+  return hmac(sha256, sharedSecret, info);
+}
+
+/**
+ * Diffie-Hellman operation using secp256k1
+ * @param privateKey Private key (32 bytes)
+ * @param publicKey Public key (33 bytes compressed)
+ * @returns Shared secret (32 bytes)
+ */
+export function diffieHellman(privateKey: Uint8Array, publicKey: Uint8Array): Uint8Array {
+  try {
+    // Validate inputs
+    if (privateKey.length !== 32) {
+      throw new Error(`Invalid private key length: ${privateKey.length}, expected 32`);
+    }
+    if (publicKey.length !== 33) {
+      throw new Error(`Invalid public key length: ${publicKey.length}, expected 33`);
+    }
+    
+    // Validate that the public key is on the curve
+    if (!secp256k1.Point.fromHex(publicKey)) {
+      throw new Error('Invalid public key: not on curve');
+    }
+    
+    const sharedPoint = secp256k1.getSharedSecret(privateKey, publicKey);
+    // Return only the x-coordinate (first 32 bytes after the prefix)
+    return sharedPoint.slice(1, 33);
+  } catch (error) {
+    console.error('Diffie-Hellman error:', {
+      privateKeyLength: privateKey.length,
+      publicKeyLength: publicKey.length,
+      privateKeyHex: bytesToHex(privateKey).slice(0, 16) + '...',
+      publicKeyHex: bytesToHex(publicKey).slice(0, 16) + '...',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    throw error;
+  }
+}
+
+/**
+ * Simple AES-GCM encryption using WebCrypto API
+ * @param key Encryption key (32 bytes)
+ * @param plaintext Data to encrypt
+ * @returns Encrypted data with IV prepended
+ */
+export async function encrypt(key: Uint8Array, plaintext: Uint8Array): Promise<Uint8Array> {
+  // Create a clean ArrayBuffer copy to avoid TypeScript issues
+  const keyBuffer = new ArrayBuffer(key.length);
+  new Uint8Array(keyBuffer).set(key);
+  
+  const plaintextBuffer = new ArrayBuffer(plaintext.length);
+  new Uint8Array(plaintextBuffer).set(plaintext);
+  
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    keyBuffer,
+    { name: 'AES-GCM' },
+    false,
+    ['encrypt']
+  );
+  
+  const iv = crypto.getRandomValues(new Uint8Array(12)); // 96-bit IV for GCM
+  const encrypted = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    cryptoKey,
+    plaintextBuffer
+  );
+  
+  // Prepend IV to encrypted data
+  const result = new Uint8Array(iv.length + encrypted.byteLength);
+  result.set(iv, 0);
+  result.set(new Uint8Array(encrypted), iv.length);
+  
+  return result;
+}
+
+/**
+ * Simple AES-GCM decryption using WebCrypto API
+ * @param key Decryption key (32 bytes)
+ * @param ciphertext Encrypted data with IV prepended
+ * @returns Decrypted data
+ */
+export async function decrypt(key: Uint8Array, ciphertext: Uint8Array): Promise<Uint8Array> {
+  // Create a clean ArrayBuffer copy to avoid TypeScript issues
+  const keyBuffer = new ArrayBuffer(key.length);
+  new Uint8Array(keyBuffer).set(key);
+  
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    keyBuffer,
+    { name: 'AES-GCM' },
+    false,
+    ['decrypt']
+  );
+  
+  // Extract IV and encrypted data
+  const iv = ciphertext.slice(0, 12);
+  const encryptedData = ciphertext.slice(12);
+  
+  // Create clean buffer for encrypted data
+  const encryptedBuffer = new ArrayBuffer(encryptedData.length);
+  new Uint8Array(encryptedBuffer).set(encryptedData);
+  
+  const decrypted = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv },
+    cryptoKey,
+    encryptedBuffer
+  );
+  
+  return new Uint8Array(decrypted);
+}
+
+/**
  * Format a key for display (first 8 chars + ... + last 8 chars)
  */
 export function formatKeyForDisplay(key: Uint8Array, fullLength: boolean = false): string {

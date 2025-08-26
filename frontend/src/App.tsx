@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { WalletSetup } from './components/WalletSetup';
 import { Counter } from './components/Counter';
 import { VerboseKeyDisplay } from './components/VerboseKeyDisplay';
+import { AliceBobTest } from './components/AliceBobTest';
 import { embeddedWallet, type WalletState } from './services/embeddedWallet';
 import './App.css';
 
@@ -95,6 +96,8 @@ function App() {
           </div>
 
           <VerboseKeyDisplay />
+
+          <AliceBobTest />
 
           <Counter />
         </main>
