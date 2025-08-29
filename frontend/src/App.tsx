@@ -4,6 +4,7 @@ import { WalletSetup } from './components/WalletSetup';
 import { Counter } from './components/Counter';
 import { VerboseKeyDisplay } from './components/VerboseKeyDisplay';
 import { AliceBobTest } from './components/AliceBobTest';
+import { SignatureDeterminismTest } from './components/SignatureDeterminismTest';
 import { embeddedWallet, type WalletState } from './services/embeddedWallet';
 import './App.css';
 
@@ -98,6 +99,8 @@ function App() {
           <VerboseKeyDisplay />
 
           <AliceBobTest />
+
+          <SignatureDeterminismTest />
 
           <Counter />
         </main>
