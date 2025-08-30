@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+/* Custom component styles */
+@layer components {
+  .gradient-primary {
+    @apply bg-gradient-to-r from-blue-500 to-purple-600;
+  }
+  
+  .gradient-text {
+    @apply bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent;
+  }
+  
+  .card {
+    @apply bg-white rounded-xl shadow-lg border border-gray-200;
+  }
+  
+  .btn-primary {
+    @apply bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold py-3 px-6 rounded-lg transition-transform hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none;
+  }
+  
+  .btn-secondary {
+    @apply bg-white text-blue-500 border-2 border-blue-500 font-bold py-3 px-6 rounded-lg transition-all hover:bg-blue-500 hover:text-white hover:-translate-y-0.5;
+  }
+  
+  .input-field {
+    @apply w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-base transition-colors focus:outline-none focus:border-blue-500;
+  }
+  
+  .code-display {
+    @apply bg-gray-100 p-3 rounded-lg font-mono text-sm break-all;
+  }
+  
+  .status-success {
+    @apply bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-bold;
+  }
+  
+  .status-error {
+    @apply bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-bold;
+  }
+  
+  .spinner {
+    @apply animate-spin text-4xl;
+  }
+}
+
+/* Custom base styles */
+body {
+  @apply bg-gray-50 text-gray-900;
+}
+
+* {
+  @apply box-border;
+}

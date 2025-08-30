@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
+import './index.css'
 
 // Setup crypto polyfills for @noble/secp256k1
 import * as secp256k1 from '@noble/secp256k1';

@@ -1,120 +1,184 @@
-
 import { useState, useEffect } from 'react';
-import { WalletSetup } from './components/WalletSetup';
-import { Counter } from './components/Counter';
-import { VerboseKeyDisplay } from './components/VerboseKeyDisplay';
-import { AliceBobTest } from './components/AliceBobTest';
-import { SignatureDeterminismTest } from './components/SignatureDeterminismTest';
-import { DerivationWalletTest } from './components/DerivationWalletTest';
-import { embeddedWallet, type WalletState } from './services/embeddedWallet';
-import './App.css';
+import { Navigation, type PageType } from './components/Navigation';
+import { HomePage } from './pages/HomePage';
+import { SignUpPage } from './pages/SignUpPage';
+import { LogInPage } from './pages/LogInPage';
+import { TransferPage } from './pages/TransferPage';
+import { TestingPage } from './pages/TestingPage';
+
+interface AppState {
+  isLoggedIn: boolean;
+  userKey: string | null;
+  walletType: string | null;
+}
 
 function App() {
-  const [walletState, setWalletState] = useState<WalletState>({ 
-    isInitialized: false, 
-    hasPassKey: false 
+  const [currentPage, setCurrentPage] = useState<PageType>('home');
+  const [appState, setAppState] = useState<AppState>({
+    isLoggedIn: false,
+    userKey: null,
+    walletType: null
   });
-  const [userKey, setUserKey] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if wallet is already initialized
-    const state = embeddedWallet.getState();
-    setWalletState(state);
+    // Check for existing session in localStorage
+    const savedUserKey = localStorage.getItem('anoma_current_user_key');
+    const savedWalletType = localStorage.getItem('anoma_current_wallet_type');
     
-    if (state.isInitialized && state.userKey) {
-      setUserKey(embeddedWallet.getUserKeyForSharing());
+    if (savedUserKey && savedWalletType) {
+      setAppState({
+        isLoggedIn: true,
+        userKey: savedUserKey,
+        walletType: savedWalletType
+      });
     }
   }, []);
 
-  const handleWalletReady = (userKeyString: string) => {
-    setUserKey(userKeyString);
-    setWalletState(embeddedWallet.getState());
+  const handleSignUpComplete = (userKey: string, walletType: string) => {
+    setAppState({
+      isLoggedIn: true,
+      userKey,
+      walletType
+    });
+    
+    // Save to localStorage for session persistence
+    localStorage.setItem('anoma_current_user_key', userKey);
+    localStorage.setItem('anoma_current_wallet_type', walletType);
+    
+    // Navigate to home or transfer page
+    setCurrentPage('transfer');
+  };
+
+  const handleLogInComplete = (userKey: string, walletType: string) => {
+    setAppState({
+      isLoggedIn: true,
+      userKey,
+      walletType
+    });
+    
+    // Save to localStorage for session persistence
+    localStorage.setItem('anoma_current_user_key', userKey);
+    localStorage.setItem('anoma_current_wallet_type', walletType);
+    
+    // Navigate to transfer page
+    setCurrentPage('transfer');
   };
 
   const handleLogout = () => {
-    embeddedWallet.logout();
-    setUserKey(null);
-    setWalletState(embeddedWallet.getState());
+    setAppState({
+      isLoggedIn: false,
+      userKey: null,
+      walletType: null
+    });
+    
+    // Clear localStorage
+    localStorage.removeItem('anoma_current_user_key');
+    localStorage.removeItem('anoma_current_wallet_type');
+    
+    // Navigate to home
+    setCurrentPage('home');
   };
 
-  const handleClearSession = () => {
-    // Clear everything including PassKey credentials for testing
-    embeddedWallet.deleteAccount();
-    setUserKey(null);
-    setWalletState(embeddedWallet.getState());
+  const handlePageChange = (page: PageType) => {
+    // Redirect to login if trying to access protected pages
+    if (!appState.isLoggedIn && page === 'transfer') {
+      setCurrentPage('login');
+      return;
+    }
+    
+    // Redirect to home if trying to access auth pages while logged in
+    if (appState.isLoggedIn && (page === 'signup' || page === 'login')) {
+      setCurrentPage('home');
+      return;
+    }
+    
+    setCurrentPage(page);
   };
 
-  // Show wallet setup if not initialized
-  if (!walletState.isInitialized || !userKey) {
-    return (
-      <div className="app">
-        <div className="container">
-          <WalletSetup onWalletReady={handleWalletReady} />
-        </div>
-      </div>
-    );
-  }
+  const renderCurrentPage = () => {
+    switch (currentPage) {
+      case 'home':
+        return (
+          <HomePage 
+            isLoggedIn={appState.isLoggedIn}
+            onNavigate={handlePageChange}
+          />
+        );
+      
+      case 'signup':
+        return (
+          <SignUpPage 
+            onSignUpComplete={handleSignUpComplete}
+          />
+        );
+      
+      case 'login':
+        return (
+          <LogInPage 
+            onLogInComplete={handleLogInComplete}
+          />
+        );
+      
+      case 'transfer':
+        return appState.isLoggedIn && appState.userKey && appState.walletType ? (
+          <TransferPage 
+            userKey={appState.userKey}
+            walletType={appState.walletType}
+          />
+        ) : (
+          <HomePage 
+            isLoggedIn={appState.isLoggedIn}
+            onNavigate={handlePageChange}
+          />
+        );
+      
+      case 'testing':
+        return <TestingPage />;
+      
+      default:
+        return (
+          <HomePage 
+            isLoggedIn={appState.isLoggedIn}
+            onNavigate={handlePageChange}
+          />
+        );
+    }
+  };
 
   return (
-    <div className="app">
-      <div className="container">
-        <header className="app-header">
-          <h1>🔐 Anoma Resource Machine</h1>
-          <p>Privacy-Preserving Transactions with Zero-Knowledge Proofs</p>
-          
-          <div className="wallet-info">
-            <div className="wallet-status">
-              <span className="status-indicator">🟢</span>
-              <span>Wallet Connected</span>
-            </div>
-            <div className="user-identity">
-              <strong>Identity:</strong> {embeddedWallet.getIdentityAddress().slice(0, 8)}...
-            </div>
-            <div className="wallet-controls">
-              <button onClick={handleLogout} className="logout-button">
-                Logout
-              </button>
-              <button onClick={handleClearSession} className="clear-session-button">
-                🗑️ Clear Session
-              </button>
-            </div>
+    <div className="min-h-screen bg-gray-50">
+      <Navigation 
+        currentPage={currentPage}
+        onPageChange={handlePageChange}
+        isLoggedIn={appState.isLoggedIn}
+      />
+      
+      <main className="flex-1">
+        {renderCurrentPage()}
+      </main>
+      
+      {appState.isLoggedIn && (
+        <div className="fixed top-20 right-4 z-40">
+          <button 
+            onClick={handleLogout} 
+            className="bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-2 rounded-lg transition-colors shadow-lg"
+          >
+            🚪 Logout
+          </button>
+        </div>
+      )}
+      
+      <footer className="bg-white border-t border-gray-200 py-6 mt-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center text-gray-600 text-sm">
+            <p>
+              🔗 Anoma Wallet - Stateless Key Derivation | 
+              Frontend: <code className="bg-gray-100 px-2 py-1 rounded">http://localhost:5174</code> | 
+              Backend: <code className="bg-gray-100 px-2 py-1 rounded">http://localhost:8080</code>
+            </p>
           </div>
-        </header>
-
-        <main className="app-main">
-          <div className="user-key-section">
-            <h3>📋 Your User Key</h3>
-            <p>Share this with others so they can send you resources:</p>
-            <div className="user-key-display">
-              <code>{userKey}</code>
-              <button 
-                onClick={() => navigator.clipboard.writeText(userKey)}
-                className="copy-button"
-                title="Copy to clipboard"
-              >
-                📋
-              </button>
-            </div>
-          </div>
-
-          <VerboseKeyDisplay />
-
-          <AliceBobTest />
-
-          <SignatureDeterminismTest />
-
-          <DerivationWalletTest />
-
-          <Counter />
-        </main>
-
-        <footer className="app-footer">
-          <p>
-            Frontend: <code>http://localhost:5173</code> | 
-            Backend: <code>http://localhost:3000</code>
-          </p>
-        </footer>
-      </div>
+        </div>
+      </footer>
     </div>
   );
 }
