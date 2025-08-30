@@ -5,6 +5,7 @@ import { Counter } from './components/Counter';
 import { VerboseKeyDisplay } from './components/VerboseKeyDisplay';
 import { AliceBobTest } from './components/AliceBobTest';
 import { SignatureDeterminismTest } from './components/SignatureDeterminismTest';
+import { DerivationWalletTest } from './components/DerivationWalletTest';
 import { embeddedWallet, type WalletState } from './services/embeddedWallet';
 import './App.css';
 
@@ -101,6 +102,8 @@ function App() {
           <AliceBobTest />
 
           <SignatureDeterminismTest />
+
+          <DerivationWalletTest />
 
           <Counter />
         </main>

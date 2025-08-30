@@ -1651,3 +1651,345 @@ body {
   color: #f59e0b;
   margin: 0 0 12px 0;
 }
+
+/* Derivation Wallet Test Styles */
+.derivation-wallet-test {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  padding: 24px;
+  margin: 20px 0;
+  color: white;
+}
+
+.derivation-wallet-test .test-header h2 {
+  margin: 0 0 12px 0;
+  font-size: 1.5em;
+  color: white;
+}
+
+.derivation-wallet-test .test-info {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 16px;
+  border-radius: 8px;
+  margin: 16px 0;
+}
+
+.derivation-wallet-test .domain-separators h4 {
+  margin: 0 0 12px 0;
+  color: #e2e8f0;
+}
+
+.derivation-wallet-test .domain-separators ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.derivation-wallet-test .domain-separators code {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.derivation-wallet-test .test-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 20px 0;
+  align-items: center;
+}
+
+.derivation-wallet-test .run-all-button {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.derivation-wallet-test .run-all-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.derivation-wallet-test .run-all-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.derivation-wallet-test .individual-tests {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.derivation-wallet-test .test-button {
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.derivation-wallet-test .test-button:hover {
+  transform: translateY(-1px);
+}
+
+.derivation-wallet-test .test-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.derivation-wallet-test .passkey-button {
+  background: #4ade80;
+  color: white;
+}
+
+.derivation-wallet-test .metamask-button {
+  background: #f97316;
+  color: white;
+}
+
+.derivation-wallet-test .phantom-button {
+  background: #8b5cf6;
+  color: white;
+}
+
+.derivation-wallet-test .comparison-button {
+  background: #06b6d4;
+  color: white;
+}
+
+.derivation-wallet-test .clear-button {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.derivation-wallet-test .derived-keys-display {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 20px;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
+.derivation-wallet-test .derived-keys-display h3 {
+  margin: 0 0 16px 0;
+  color: #4ade80;
+}
+
+.derivation-wallet-test .keys-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+  .derivation-wallet-test .keys-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.derivation-wallet-test .key-section {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 12px;
+  border-radius: 6px;
+}
+
+.derivation-wallet-test .key-section h4 {
+  margin: 0 0 8px 0;
+  color: #e2e8f0;
+  font-size: 0.9em;
+}
+
+.derivation-wallet-test .key-section code {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.8em;
+  word-break: break-all;
+  display: block;
+}
+
+.derivation-wallet-test .user-key-section {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 16px;
+  border-radius: 6px;
+  border: 2px solid rgba(74, 222, 128, 0.3);
+}
+
+.derivation-wallet-test .user-key-section h4 {
+  margin: 0 0 12px 0;
+  color: #4ade80;
+}
+
+.derivation-wallet-test .user-key-display {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.derivation-wallet-test .user-key-display code {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 12px;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+  word-break: break-all;
+}
+
+.derivation-wallet-test .copy-button {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.derivation-wallet-test .copy-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.derivation-wallet-test .no-results {
+  text-align: center;
+  padding: 40px;
+  color: #cbd5e1;
+  font-style: italic;
+}
+
+.derivation-wallet-test .test-result {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 20px;
+  margin: 16px 0;
+  border-left: 4px solid #64748b;
+}
+
+.derivation-wallet-test .test-result.success {
+  border-left-color: #22c55e;
+}
+
+.derivation-wallet-test .test-result.failure {
+  border-left-color: #ef4444;
+}
+
+.derivation-wallet-test .result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.derivation-wallet-test .result-header h3 {
+  margin: 0;
+  color: white;
+}
+
+.derivation-wallet-test .duration-badge {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8em;
+  font-weight: bold;
+}
+
+.derivation-wallet-test .error-message {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fecaca;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  border-left: 4px solid #ef4444;
+}
+
+.derivation-wallet-test .result-data {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 12px;
+  border-radius: 6px;
+  margin-top: 12px;
+}
+
+.derivation-wallet-test .result-data h4 {
+  margin: 0 0 8px 0;
+  color: #e2e8f0;
+  font-size: 0.9em;
+}
+
+.derivation-wallet-test .result-data pre {
+  margin: 0;
+  font-family: 'Courier New', monospace;
+  font-size: 0.8em;
+  color: #cbd5e1;
+  overflow-x: auto;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.derivation-wallet-test .approach-comparison {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 20px;
+  border-radius: 8px;
+  margin-top: 24px;
+}
+
+.derivation-wallet-test .approach-comparison h3 {
+  margin: 0 0 16px 0;
+  color: white;
+}
+
+.derivation-wallet-test .comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .derivation-wallet-test .comparison-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.derivation-wallet-test .approach-card {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 16px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+}
+
+.derivation-wallet-test .approach-card.current {
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.derivation-wallet-test .approach-card.derivation {
+  border-color: rgba(34, 197, 94, 0.5);
+}
+
+.derivation-wallet-test .approach-card h4 {
+  margin: 0 0 12px 0;
+}
+
+.derivation-wallet-test .approach-card ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #cbd5e1;
+}
+
+.derivation-wallet-test .approach-card li {
+  margin-bottom: 4px;
+}

@@ -89,6 +89,30 @@ function generateKeyPair(keyMaterial: Uint8Array): KeyPair {
 }
 
 /**
+ * Generate a key pair from a given private key
+ * @param privateKey 32-byte private key
+ * @returns KeyPair with the given private key and computed public key
+ */
+export function generateKeyPairFromPrivateKey(privateKey: Uint8Array): KeyPair {
+  if (privateKey.length !== 32) {
+    throw new Error(`Invalid private key length: ${privateKey.length}, expected 32`);
+  }
+  
+  // Validate private key is not zero
+  if (privateKey.every(b => b === 0)) {
+    throw new Error('Invalid private key: all zeros');
+  }
+  
+  // Generate public key
+  const publicKey = secp256k1.getPublicKey(privateKey, true); // compressed format
+  
+  return {
+    privateKey,
+    publicKey
+  };
+}
+
+/**
  * Generate nullifier key pair using PRF
  * @param masterSeed Master seed (32 bytes)
  * @returns Nullifier key pair with nk and cnk
